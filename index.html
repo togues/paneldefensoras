@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel · Observatorio Comunitario</title>
+<link rel="stylesheet" href="css/panel.css">
+<!-- CDN, con el visto bueno de Marco para el panel (sí o sí en línea,
+     a diferencia de la app comunitaria — ver CLAUDE.md, "Sin librerías
+     de interfaz de terceros" es una regla de app/, no de panel/).
+     Versión exacta fijada, nunca "latest". -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<style>#r-mapa{height:560px;border-radius:var(--r-s);border:1px solid var(--outline-var)}</style>
+</head>
+<body>
+<!-- Sprite de íconos — mismo sistema que app/index.html (línea, trazo
+     2px, sin relleno), para que las tres aplicaciones del producto se
+     sientan de la misma familia en vez de cada una con su propia
+     convención. Los seis primeros son un calco literal de app/; los
+     que siguen (analisis, corazon, controles, respaldo, salir) son
+     nuevos, hechos a mano con el mismo criterio geométrico. -->
+<svg class="sprite" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-inicio" viewBox="0 0 24 24"><path d="M3 10.2 12 3l9 7.2V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-reportes" viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/><path d="M8.5 13h7M8.5 16.5h4.5"/></symbol>
+  <symbol id="i-mapa" viewBox="0 0 24 24"><path d="M9 4 3.6 6.1v13.4L9 17.4l6 2.2 5.4-2.1V4.1L15 6.2z"/><path d="M9 4v13.4M15 6.2v13.4"/></symbol>
+  <symbol id="i-ayuda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M9.2 9.3a2.9 2.9 0 0 1 5.6 1c0 1.9-2.8 2.5-2.8 3.9"/><path d="M12 17.3h.01"/></symbol>
+  <symbol id="i-cerrar" viewBox="0 0 24 24"><path d="m18 6-12 12M6 6l12 12"/></symbol>
+  <symbol id="i-comunidad" viewBox="0 0 24 24"><circle cx="8.6" cy="9" r="2.8"/><circle cx="16.4" cy="9.6" r="2.3"/><path d="M3.6 18.6a5.2 5.2 0 0 1 10 0M15 14.4a4.6 4.6 0 0 1 5.4 4.2"/></symbol>
+  <symbol id="i-analisis" viewBox="0 0 24 24"><path d="M4.4 20.4h15.2"/><rect x="6" y="13" width="3" height="7.4" rx="0.8"/><rect x="10.5" y="9" width="3" height="11.4" rx="0.8"/><rect x="15" y="5.5" width="3" height="14.9" rx="0.8"/></symbol>
+  <symbol id="i-corazon" viewBox="0 0 24 24"><path d="M12 20.2S4.6 15.6 4.6 10.2a4.6 4.6 0 0 1 8.4-2.6 4.6 4.6 0 0 1 8.4 2.6c0 5.4-9.4 10-9.4 10z"/><path d="M8 12.4h2.2l1.3-2.4 1.6 4.4 1.1-2h2.4"/></symbol>
+  <symbol id="i-controles" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M9 17h11"/><circle cx="14" cy="7" r="2.2"/><circle cx="7" cy="17" r="2.2"/></symbol>
+  <symbol id="i-respaldo" viewBox="0 0 24 24"><path d="M12 3.4v10.2"/><path d="m7.8 9.6 4.2 4.2 4.2-4.2"/><path d="M4.2 16.2v2.6a1.8 1.8 0 0 0 1.8 1.8h12a1.8 1.8 0 0 0 1.8-1.8v-2.6"/></symbol>
+  <symbol id="i-salir" viewBox="0 0 24 24"><path d="M9 4.4H6.4A1.4 1.4 0 0 0 5 5.8v12.4A1.4 1.4 0 0 0 6.4 19.6H9"/><path d="m12.5 8.4 4.1 3.6-4.1 3.6"/><path d="M16.2 12H9.6"/></symbol>
+</defs></svg>
+
+<div id="pantalla-login" hidden></div>
+
+<div class="app" id="app-shell" hidden>
+
+  <nav class="lat">
+    <div class="logo"><b>Observatorio Comunitario</b><small>Panel de REDNA</small></div>
+    <a class="on" data-v="resumen"><span class="nav-i"><svg class="i"><use href="#i-inicio"/></svg></span>Resumen</a>
+    <a data-v="casos"><span class="nav-i"><svg class="i"><use href="#i-reportes"/></svg></span>Casos</a>
+    <a data-v="mapa"><span class="nav-i"><svg class="i"><use href="#i-mapa"/></svg></span>Mapa</a>
+    <a data-v="analisis"><span class="nav-i"><svg class="i"><use href="#i-analisis"/></svg></span>Análisis</a>
+    <a data-v="salud"><span class="nav-i"><svg class="i"><use href="#i-corazon"/></svg></span>Salud de datos</a>
+    <div class="sep"></div>
+    <a data-v="config"><span class="nav-i"><svg class="i"><use href="#i-controles"/></svg></span>Configuración</a>
+    <a data-v="respaldos"><span class="nav-i"><svg class="i"><use href="#i-respaldo"/></svg></span>Respaldos</a>
+    <div class="pie" id="usuario-pie"></div>
+  </nav>
+
+  <main class="main" id="contenido"></main>
+</div>
+
+<!-- Overlay del detalle de caso — vive fuera de #contenido porque tapa
+     el shell entero (la vista Casos lo abre y lo cierra). -->
+<div id="overlay">
+  <div id="detalle"></div>
+</div>
+
+<!-- Lightbox de una foto de evidencia a tamaño completo — arriba del
+     overlay de detalle (casos.js lo abre al tocar una miniatura). -->
+<div id="foto-lightbox">
+  <button type="button" class="cerrar" id="foto-lightbox-cerrar" aria-label="Cerrar fotografía"><svg class="i"><use href="#i-cerrar"/></svg></button>
+  <img alt="Fotografía de evidencia a tamaño completo">
+</div>
+
+<!-- Solo existe en producción, ver js/config/runtime.local.example.js.
+     Un 404 acá es normal en desarrollo. -->
+<script src="js/config/runtime.local.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

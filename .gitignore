@@ -1,0 +1,9 @@
+# paneldefensoras — repositorio del panel administrativo solamente.
+# Sin API, sin app móvil, sin muro, sin base de datos: esos van en sus
+# propios repositorios aparte.
+
+# Secreto de runtime del front (X-App-Secret real) — el .example sí se versiona.
+js/config/runtime.local.js
+
+.DS_Store
+*.log
