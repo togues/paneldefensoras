@@ -21,7 +21,7 @@
    firmarlo", respetando los filtros que estén puestos en ese momento,
    no solo la página visible. Ver exportarCsv()/exportarPdf() más abajo.
    ===================================================================== */
-import { obtenerCasos, obtenerCaso, obtenerCatalogos, actualizarCaso, publicarCaso, obtenerEvidenciaUrl } from '../data/api-client.js';
+import { obtenerCasos, obtenerCaso, obtenerCatalogos, actualizarCaso, publicarCaso, obtenerEvidenciaUrl, eliminarEvidencia } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
 
@@ -298,10 +298,22 @@ async function abrirDetalle(id) {
   const c = r.data;
 
   const idsEvidencias = c.evidencias_ids || [];
+  // Solo el admin ve la fotografía (api_v1.md 3.6: "evidencia no es
+  // accesible por URL directa", nunca en el muro ni en ninguna otra
+  // parte) — el botón de basura es un hijo APARTE del .fotito, no
+  // anidado adentro: un <button> no puede contener otro <button>
+  // válido en HTML, y acá hacen falta dos acciones independientes (ver
+  // completa / eliminar) sobre la misma miniatura.
   const fotos = idsEvidencias.length > 0
     ? `<div class="caja"><h2>Evidencia · ${idsEvidencias.length} fotografía${idsEvidencias.length > 1 ? 's' : ''}</h2>
-        <div class="fotitos">${idsEvidencias.map((idFoto) => `<button type="button" class="fotito cargando-foto" data-foto="${idFoto}" aria-label="Ver fotografía completa"></button>`).join('')}</div>
-        <p class="sub2">Metadatos EXIF eliminados al momento de la carga.</p></div>`
+        <div class="fotitos">${idsEvidencias.map((idFoto) => `
+          <div class="fotito-envoltura">
+            <button type="button" class="fotito cargando-foto" data-foto="${idFoto}" aria-label="Ver fotografía completa"></button>
+            <button type="button" class="fotito-borrar" data-borrar-foto="${idFoto}" aria-label="Eliminar esta fotografía" title="Eliminar esta fotografía">
+              <svg class="i"><use href="#i-basura"/></svg>
+            </button>
+          </div>`).join('')}</div>
+        <p class="sub2">Solo visible acá, para el panel — nunca en el muro público ni en ningún otro lugar. Metadatos EXIF eliminados al momento de la carga.</p></div>`
     : '<div class="caja"><h2>Evidencia</h2><p class="sub2">Sin fotografías adjuntas.</p></div>';
 
   const bitacora = c.seguimiento.length
@@ -364,6 +376,13 @@ async function abrirDetalle(id) {
         <p class="sub2" style="margin-top:14px">El relato original nunca se edita. Toda interpretación va en las notas de seguimiento, para conservar el valor probatorio del registro.</p>
       </div>
     </div>`;
+
+  // El manejador de "eliminar foto" vive en enlazarLightboxFotos(),
+  // delegado y enlazado una sola vez (no acá adentro, que se repite en
+  // cada abrirDetalle()) — necesita saber a qué caso refrescar después
+  // de borrar, y por eso no puede capturar `id` por clausura como sí
+  // hacen c-guardar/c-publicar.
+  detalle.dataset.casoId = id;
 
   document.getElementById('c-cerrar').addEventListener('click', cerrarDetalle);
   cargarMiniaturasEvidencia(idsEvidencias);
@@ -495,10 +514,40 @@ function cerrarFotoCompleta() {
   document.getElementById('foto-lightbox').classList.remove('on');
 }
 
+/**
+ * Permanente: sin papelera ni forma de deshacer (ver el comentario
+ * largo en admin/evidencia.php). Por eso el aviso es explícito —pedido
+ * de Marco— y no un simple "¿Eliminar?" distraído.
+ */
+async function borrarFoto(boton) {
+  const idFoto = boton.dataset.borrarFoto;
+  const confirmado = confirm(
+    'Eliminar esta fotografía es permanente: no queda ningún respaldo, ni en el panel ni en ningún otro lugar.\n\n¿Continuar?'
+  );
+  if (!confirmado) return;
+
+  boton.disabled = true;
+  const r = await eliminarEvidencia(idFoto);
+  if (!r.ok) {
+    boton.disabled = false;
+    alert('No se pudo eliminar la fotografía: ' + r.error);
+    return;
+  }
+
+  const idCaso = document.getElementById('detalle').dataset.casoId;
+  if (idCaso) await abrirDetalle(idCaso); // re-pinta sin la foto borrada y con la nota ya en la bitácora
+  cargarTabla();
+}
+
 function enlazarLightboxFotos() {
   document.getElementById('detalle').addEventListener('click', (e) => {
-    const boton = e.target.closest('.fotito[data-foto-url]');
-    if (boton) abrirFotoCompleta(boton.dataset.fotoUrl);
+    const borrarBoton = e.target.closest('[data-borrar-foto]');
+    if (borrarBoton) {
+      borrarFoto(borrarBoton);
+      return;
+    }
+    const verBoton = e.target.closest('.fotito[data-foto-url]');
+    if (verBoton) abrirFotoCompleta(verBoton.dataset.fotoUrl);
   });
   const lightbox = document.getElementById('foto-lightbox');
   lightbox.addEventListener('click', (e) => { if (e.target === lightbox) cerrarFotoCompleta(); });

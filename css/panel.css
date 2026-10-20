@@ -202,14 +202,25 @@ tbody tr:hover{background:var(--surface-1)}
    altura explícita en el contenedor o mide cero. */
 #c-mapa-exacto{height:180px;border-radius:var(--r-s);border:1px solid var(--outline-var);margin:10px 0}
 .fotitos{display:flex;gap:9px;margin-bottom:10px;flex-wrap:wrap}
+/* Envoltorio aparte del botón de ver: un <button> no puede contener
+   otro <button> válido en HTML, y acá hacen falta dos acciones
+   independientes (ver completa / eliminar) sobre la misma miniatura. */
+.fotito-envoltura{position:relative;flex:none}
 .fotito{width:64px;height:64px;border-radius:var(--r-s);border:none;padding:0;cursor:pointer;
   background-color:var(--surface-2);background-size:cover;background-position:center;
-  transition:transform .12s;flex:none}
+  transition:transform .12s}
 .fotito:hover{transform:scale(1.05)}
 /* Mientras carga: el mismo degradé que antes era el placeholder
    permanente, ahora es solo el estado transitorio. */
 .fotito.cargando-foto{background-image:linear-gradient(140deg,#CBD9D4,#A9BFB8);cursor:default}
 .fotito.fotito-error{background:var(--surface-2);cursor:default;opacity:.6}
+/* --error, no --acento: es la misma intención que el resto del panel
+   usa para lo irreversible, no un tono nuevo inventado para esto solo. */
+.fotito-borrar{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;
+  border:1.5px solid var(--surface);background:var(--error);color:#fff;display:grid;place-items:center;
+  cursor:pointer;padding:0;box-shadow:var(--e1);transition:transform .12s}
+.fotito-borrar:hover{transform:scale(1.12)}
+.fotito-borrar .i{width:12px;height:12px}
 
 #foto-lightbox{display:none;position:fixed;inset:0;background:rgba(4,14,12,.88);z-index:95;
   align-items:center;justify-content:center;padding:32px}

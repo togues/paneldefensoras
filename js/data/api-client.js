@@ -183,6 +183,16 @@ export async function descargarRespaldo(id, nombreArchivo) {
  * aparte y se arma la URL acá, autenticada, en vez de exponer un
  * enlace directo al archivo.
  */
+/**
+ * Borra una fotografía de evidencia — permanente, sin papelera (ver el
+ * comentario largo en admin/evidencia.php). A diferencia de
+ * obtenerEvidenciaUrl(), acá sí pasa por pedir(): la respuesta es
+ * {success, data}, no el archivo en sí.
+ */
+export function eliminarEvidencia(id) {
+  return pedir('/admin/evidencias/' + encodeURIComponent(id), { method: 'DELETE' });
+}
+
 export async function obtenerEvidenciaUrl(id) {
   try {
     const respuesta = await fetch(buildUrl('/admin/evidencias/' + encodeURIComponent(id)), { headers: buildHeaders() });
