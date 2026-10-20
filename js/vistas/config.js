@@ -12,7 +12,7 @@
    lib/PanelAuth.php::obRequireRolAdministrador(). Un operador ve un
    aviso, no la pantalla vacía ni rota.
    ===================================================================== */
-import { obtenerUsuarios, crearUsuario, actualizarUsuario, obtenerComunidades, crearComunidad, generarCodigo, revocarCodigo, actualizarVigenciaCodigo } from '../data/api-client.js';
+import { obtenerUsuarios, crearUsuario, actualizarUsuario, obtenerComunidades, crearComunidad, actualizarComunidad, generarCodigo, revocarCodigo, actualizarVigenciaCodigo } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
 
@@ -173,11 +173,20 @@ function pintarComunidades(comunidades) {
           </div>` : ''}
       </div>`).join('');
     return `
-      <div style="margin-bottom:6px" data-comunidad-bloque="${co.id}">
-        <div class="lista-item">
-          <div class="li-t"><b>${co.nombre}</b><small>${co.canton || '—'} · ${co.personas_inscritas} persona${co.personas_inscritas === 1 ? '' : 's'} inscrita${co.personas_inscritas === 1 ? '' : 's'}</small></div>
-          <span class="li-a" data-generar="${co.id}">Generar código nuevo</span>
+      <div style="margin-bottom:6px${co.activo ? '' : ';opacity:.6'}" data-comunidad-bloque="${co.id}">
+        <div class="lista-item" style="flex-wrap:wrap">
+          <div class="li-t"><b>${co.nombre}</b><small>${co.activo ? '' : 'Desactivada · '}${co.canton || '—'} · ${co.personas_inscritas} persona${co.personas_inscritas === 1 ? '' : 's'} inscrita${co.personas_inscritas === 1 ? '' : 's'}</small></div>
+          <div style="display:flex;gap:10px;align-items:center">
+            ${co.activo ? `<span class="li-a" data-generar="${co.id}">Generar código nuevo</span>` : ''}
+            <span class="li-a" data-comunidad-toggle="${co.id}" data-activo="${co.activo}">${co.activo ? 'Desactivar' : 'Reactivar'}</span>
+          </div>
         </div>
+        ${co.activo ? `
+          <div class="vigencia-controles" style="padding-left:16px">
+            <label>Nombre <input type="text" data-com-nombre="${co.id}" value="${co.nombre}" style="width:220px"></label>
+            <label>Tipo <input type="text" data-com-tipo="${co.id}" value="${co.tipo || ''}" style="width:140px"></label>
+            <span class="li-a" data-guardar-comunidad="${co.id}">Guardar</span>
+          </div>` : ''}
         ${codigos}
       </div>`;
   }).join('') || '<p class="sub2">Sin comunidades todavía.</p>';
@@ -226,6 +235,26 @@ function pintarComunidades(comunidades) {
       const r = await generarCodigo(el.dataset.generar);
       if (r.ok) await cargarComunidades();
       else el.textContent = 'Generar código nuevo';
+    });
+  });
+  document.querySelectorAll('[data-guardar-comunidad]').forEach((el) => {
+    el.addEventListener('click', async () => {
+      const id = el.dataset.guardarComunidad;
+      const nombre = document.querySelector(`[data-com-nombre="${id}"]`).value.trim();
+      const tipo = document.querySelector(`[data-com-tipo="${id}"]`).value.trim();
+      el.textContent = 'Guardando…';
+      const r = await actualizarComunidad(id, { nombre, tipo });
+      if (r.ok) await cargarComunidades();
+      else { el.textContent = 'Guardar'; alert('No se pudo guardar: ' + r.error); }
+    });
+  });
+  document.querySelectorAll('[data-comunidad-toggle]').forEach((el) => {
+    el.addEventListener('click', async () => {
+      const activo = el.dataset.activo === 'true';
+      el.textContent = 'Guardando…';
+      const r = await actualizarComunidad(el.dataset.comunidadToggle, { activo: !activo });
+      if (r.ok) await cargarComunidades();
+      else el.textContent = activo ? 'Desactivar' : 'Reactivar';
     });
   });
 }

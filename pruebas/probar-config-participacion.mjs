@@ -33,50 +33,61 @@ await paso('participacion_muestra_numeros_reales_sin_identificar_grupos_chicos',
   await p.waitForSelector('text=Ningún grupo llega todavía', { timeout: 4000 });
 });
 
+// Con marca de tiempo también: "prueba-e2e@dev.local" fijo chocaba con
+// la cuenta ya creada por una corrida anterior (correo UNIQUE en la
+// base) — 409 Conflict visto de verdad en consola, 2026-10-20.
+const SUFIJO_USUARIO_PRUEBA = Date.now();
+const NOMBRE_USUARIO_PRUEBA = 'Persona de Prueba ' + SUFIJO_USUARIO_PRUEBA;
+
 await paso('config_crea_una_cuenta_de_panel_nueva', async () => {
   await p.click('.lat a[data-v="config"]');
   await p.waitForSelector('#cfg-usuarios .lista-item', { timeout: 8000 });
   await p.click('#cfg-mostrar-form-usuario');
-  await p.fill('#cfg-u-nombre', 'Persona de Prueba');
-  await p.fill('#cfg-u-correo', 'prueba-e2e@dev.local');
+  await p.fill('#cfg-u-nombre', NOMBRE_USUARIO_PRUEBA);
+  await p.fill('#cfg-u-correo', `prueba-e2e-${SUFIJO_USUARIO_PRUEBA}@dev.local`);
   await p.fill('#cfg-u-clave', 'clave-e2e-12345');
   await p.selectOption('#cfg-u-rol', 'operador');
   await p.click('#cfg-form-usuario button[type="submit"]');
-  await p.waitForSelector('text=Persona de Prueba', { timeout: 8000 });
+  await p.waitForSelector(`text=${NOMBRE_USUARIO_PRUEBA}`, { timeout: 8000 });
 });
 
 await paso('config_desactivar_la_cuenta_recien_creada', async () => {
-  const fila = p.locator('.lista-item', { hasText: 'Persona de Prueba' });
+  const fila = p.locator('.lista-item', { hasText: NOMBRE_USUARIO_PRUEBA });
   await fila.locator('[data-usuario-toggle]').click();
   await p.waitForTimeout(600);
-  const chip = await fila.locator('small').textContent();
   // Tras desactivar sigue en la lista (nunca se borra), pero el botón cambia a "Reactivar".
-  await p.waitForSelector('.lista-item:has-text("Persona de Prueba") [data-usuario-toggle][data-activo="false"]', { timeout: 4000 });
-  void chip;
+  await p.waitForSelector(`.lista-item:has-text("${NOMBRE_USUARIO_PRUEBA}") [data-usuario-toggle][data-activo="false"]`, { timeout: 4000 });
 });
+
+// Con marca de tiempo, no un nombre fijo: "Comunidad E2E de Prueba" a
+// secas se fue acumulando duplicada en el DB compartido cada vez que
+// esta prueba corrió a lo largo de la sesión (3 filas con el mismo
+// nombre, encontradas el 2026-10-20) — hasText() con varias coincide
+// con todas a la vez y revienta en modo estricto de Playwright.
+const NOMBRE_COMUNIDAD_PRUEBA = 'Comunidad E2E de Prueba ' + Date.now();
 
 await paso('config_crea_comunidad_y_genera_codigo', async () => {
   await p.click('#cfg-mostrar-form-comunidad');
   await p.waitForFunction(() => document.getElementById('cfg-c-canton')?.options.length > 0, { timeout: 4000 });
-  await p.fill('#cfg-c-nombre', 'Comunidad E2E de Prueba');
+  await p.fill('#cfg-c-nombre', NOMBRE_COMUNIDAD_PRUEBA);
   await p.click('#cfg-form-comunidad button[type="submit"]');
-  await p.waitForSelector('text=Comunidad E2E de Prueba', { timeout: 8000 });
+  await p.waitForSelector(`text=${NOMBRE_COMUNIDAD_PRUEBA}`, { timeout: 8000 });
 
   // Bloque scoped por data-comunidad-bloque (id real de la comunidad recién
   // creada) — nunca por texto, que puede matchear el div ancestro de
   // CUALQUIER comunidad (p. ej. "ADESCO El Zapote", el fixture compartido de
   // toda la suite de app/). Esto fue justo lo que revocó ZAP001 por error.
-  const idComunidad = await p.locator('[data-comunidad-bloque]', { hasText: 'Comunidad E2E de Prueba' }).getAttribute('data-comunidad-bloque');
+  const idComunidad = await p.locator('[data-comunidad-bloque]', { hasText: NOMBRE_COMUNIDAD_PRUEBA }).getAttribute('data-comunidad-bloque');
   const bloque = p.locator(`[data-comunidad-bloque="${idComunidad}"]`);
   const codigos = await bloque.locator('.codigo-mono').count();
   if (codigos === 0) throw new Error('no se generó ningún código para la comunidad nueva');
 });
 
 await paso('config_revocar_codigo_lo_marca_como_revocado', async () => {
-  const idComunidad = await p.locator('[data-comunidad-bloque]', { hasText: 'Comunidad E2E de Prueba' }).getAttribute('data-comunidad-bloque');
+  const idComunidad = await p.locator('[data-comunidad-bloque]', { hasText: NOMBRE_COMUNIDAD_PRUEBA }).getAttribute('data-comunidad-bloque');
   const bloque = p.locator(`[data-comunidad-bloque="${idComunidad}"]`);
   await bloque.locator('[data-revocar]').first().click();
-  await p.waitForSelector('text=Comunidad E2E de Prueba', { timeout: 8000 });
+  await p.waitForSelector(`text=${NOMBRE_COMUNIDAD_PRUEBA}`, { timeout: 8000 });
   await bloque.locator('text=Revocado').waitFor({ timeout: 4000 });
 });
 

@@ -127,6 +127,10 @@ export function crearComunidad(datos) {
   return pedir('/admin/comunidades', { method: 'POST', body: datos });
 }
 
+export function actualizarComunidad(id, cambios) {
+  return pedir('/admin/comunidades/' + encodeURIComponent(id), { method: 'PATCH', body: cambios });
+}
+
 export function generarCodigo(comunidadId) {
   return pedir('/admin/comunidades/' + encodeURIComponent(comunidadId) + '/codigos', { method: 'POST' });
 }
