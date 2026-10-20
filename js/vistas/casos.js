@@ -33,6 +33,7 @@ const COLOR_FAMILIA = { persona: '#A32B1E', territorio: '#B0620A', gestion: '#5B
 let filtroEstado = 'todos';
 let paginaActual = 1;
 let comunidadesCache = null;
+let departamentosCache = null;
 let temporizadorBusqueda = null;
 const POR_PAGINA = 25;
 
@@ -85,6 +86,10 @@ function esqueleto() {
           <label for="c-comunidad">Comunidad</label>
           <select id="c-comunidad" class="campo-filtro"><option value="">Todas</option></select>
         </div>
+        <div class="campo-grupo" style="min-width:170px">
+          <label for="c-departamento">Departamento</label>
+          <select id="c-departamento" class="campo-filtro"><option value="">Todos</option></select>
+        </div>
         <div class="campo-grupo" style="min-width:130px">
           <label for="c-prioridad">Prioridad</label>
           <select id="c-prioridad" class="campo-filtro">
@@ -112,7 +117,7 @@ function esqueleto() {
         <div class="filtro" data-e="descartado">Descartados</div>
         <div class="filtro" data-e="anomalo">Anómalos</div>
       </div>
-      <table><thead><tr><th>Folio</th><th>Comunidad</th><th>Tipo de hecho</th><th>Familia</th><th>Recibido</th><th>Prioridad</th><th>Estado</th></tr></thead>
+      <table><thead><tr><th>Folio</th><th>Comunidad</th><th>Departamento</th><th>Tipo de hecho</th><th>Familia</th><th>Recibido</th><th>Prioridad</th><th>Estado</th></tr></thead>
       <tbody id="c-tabla"></tbody></table>
     </div>
     <div id="c-paginacion" class="acciones" style="justify-content:center;margin-top:8px"></div>`;
@@ -123,6 +128,7 @@ function filaCaso(c) {
   return `<tr data-id="${c.id}">
       <td class="folio">${c.folio || '—'}</td>
       <td>${c.comunidad || '—'}<div class="sub2">${c.canton || ''}</div></td>
+      <td>${c.departamento || '—'}</td>
       <td>${c.tipo}</td>
       <td><span class="fam"><i style="background:${COLOR_FAMILIA[c.familia] || '#6F7976'}"></i>${NOMBRE_FAMILIA[c.familia] || c.familia}</span></td>
       <td class="sub2">${formatoFecha(c.fecha_registro)}</td>
@@ -140,6 +146,8 @@ function leerFiltrosSinPaginar() {
   if (q) filtros.q = q;
   const comunidad = document.getElementById('c-comunidad')?.value;
   if (comunidad) filtros.comunidad_id = comunidad;
+  const departamento = document.getElementById('c-departamento')?.value;
+  if (departamento) filtros.departamento_id = departamento;
   const prioridad = document.getElementById('c-prioridad')?.value;
   if (prioridad) filtros.prioridad = prioridad;
   const desde = document.getElementById('c-desde')?.value;
@@ -166,6 +174,10 @@ function etiquetasFiltrosActivos() {
   if (filtros.comunidad_id) {
     const nombre = comunidadesCache?.find((c) => String(c.id) === String(filtros.comunidad_id))?.nombre;
     etiquetas.push('Comunidad: ' + (nombre || filtros.comunidad_id));
+  }
+  if (filtros.departamento_id) {
+    const nombre = departamentosCache?.find((d) => String(d.id) === String(filtros.departamento_id))?.nombre;
+    etiquetas.push('Departamento: ' + (nombre || filtros.departamento_id));
   }
   if (filtros.prioridad) etiquetas.push('Prioridad: ' + filtros.prioridad);
   if (filtros.desde) etiquetas.push('Desde: ' + filtros.desde);
@@ -194,11 +206,11 @@ async function obtenerTodosLosCasosFiltrados() {
 }
 
 async function cargarTabla() {
-  document.getElementById('c-tabla').innerHTML = '<tr><td colspan="7" class="cargando">Cargando…</td></tr>';
+  document.getElementById('c-tabla').innerHTML = '<tr><td colspan="8" class="cargando">Cargando…</td></tr>';
 
   const r = await obtenerCasos(leerFiltros());
   if (!r.ok) {
-    document.getElementById('c-tabla').innerHTML = `<tr><td colspan="7" class="error-carga">No se pudo cargar: ${r.error} (${r.code})</td></tr>`;
+    document.getElementById('c-tabla').innerHTML = `<tr><td colspan="8" class="error-carga">No se pudo cargar: ${r.error} (${r.code})</td></tr>`;
     return;
   }
 
@@ -206,7 +218,7 @@ async function cargarTabla() {
   document.getElementById('c-resumen').textContent = `${total} reporte${total === 1 ? '' : 's'}`;
   document.getElementById('c-tabla').innerHTML = casos.length
     ? casos.map(filaCaso).join('')
-    : '<tr><td colspan="7" class="vacio">No hay casos con ese filtro.</td></tr>';
+    : '<tr><td colspan="8" class="vacio">No hay casos con ese filtro.</td></tr>';
 
   document.querySelectorAll('#c-tabla tr[data-id]').forEach((fila) => {
     fila.addEventListener('click', () => abrirDetalle(fila.dataset.id));
@@ -251,12 +263,13 @@ function enlazarBarraFiltros() {
     clearTimeout(temporizadorBusqueda);
     temporizadorBusqueda = setTimeout(irAPagina1YCargar, 350);
   });
-  ['c-comunidad', 'c-prioridad', 'c-desde', 'c-hasta'].forEach((idCampo) => {
+  ['c-comunidad', 'c-departamento', 'c-prioridad', 'c-desde', 'c-hasta'].forEach((idCampo) => {
     document.getElementById(idCampo).addEventListener('change', irAPagina1YCargar);
   });
   document.getElementById('c-limpiar').addEventListener('click', () => {
     document.getElementById('c-buscar').value = '';
     document.getElementById('c-comunidad').value = '';
+    document.getElementById('c-departamento').value = '';
     document.getElementById('c-prioridad').value = '';
     document.getElementById('c-desde').value = '';
     document.getElementById('c-hasta').value = '';
@@ -280,6 +293,20 @@ async function cargarComunidades() {
   }
   const select = document.getElementById('c-comunidad');
   select.insertAdjacentHTML('beforeend', comunidadesCache.map((c) => `<option value="${c.id}">${c.nombre}</option>`).join(''));
+}
+
+// Mismo criterio que cargarComunidades(): territorio del HECHO, nunca
+// dispositivo.departamento_id (eso es otro dato, demográfico — ver
+// bd/migraciones/009). Mismo catálogo de 14 que ya usa la app.
+async function cargarDepartamentos() {
+  if (!departamentosCache) {
+    const r = await obtenerCatalogos();
+    departamentosCache = r.ok
+      ? (r.data.departamentos || []).slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      : [];
+  }
+  const select = document.getElementById('c-departamento');
+  select.insertAdjacentHTML('beforeend', departamentosCache.map((d) => `<option value="${d.id}">${d.nombre}</option>`).join(''));
 }
 
 async function abrirDetalle(id) {
@@ -717,5 +744,6 @@ export async function montar(raiz) {
     overlayEnlazado = true;
   }
   await cargarComunidades();
+  await cargarDepartamentos();
   await cargarTabla();
 }
