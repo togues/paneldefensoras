@@ -177,6 +177,9 @@ tbody tr:hover{background:var(--surface-1)}
 .lista-item .li-t small{font-size:11.5px;color:var(--on-surface-var)}
 .lista-item .li-a{font-size:12px;color:var(--primary);font-weight:700;cursor:pointer;white-space:nowrap}
 .codigo-mono{font-family:Consolas,Monaco,monospace;font-weight:700;color:var(--primary);letter-spacing:.06em}
+.vigencia-controles{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.vigencia-controles label{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--on-surface-var)}
+.vigencia-controles input[type="date"]{border:1px solid var(--outline-var);border-radius:6px;padding:3px 6px;font-size:12px;font-family:inherit}
 
 /* detalle de caso */
 #overlay{display:none;position:fixed;inset:0;background:rgba(10,25,22,.45);z-index:80;

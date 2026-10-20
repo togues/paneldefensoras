@@ -12,7 +12,7 @@
    lib/PanelAuth.php::obRequireRolAdministrador(). Un operador ve un
    aviso, no la pantalla vacía ni rota.
    ===================================================================== */
-import { obtenerUsuarios, crearUsuario, actualizarUsuario, obtenerComunidades, crearComunidad, generarCodigo, revocarCodigo } from '../data/api-client.js';
+import { obtenerUsuarios, crearUsuario, actualizarUsuario, obtenerComunidades, crearComunidad, generarCodigo, revocarCodigo, actualizarVigenciaCodigo } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
 
@@ -21,6 +21,67 @@ let cantonesCache = [];
 function formatoFecha(iso) {
   if (!iso) return 'nunca entró';
   return new Date(iso).toLocaleDateString('es-SV', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// Para el día en una fecha de vigencia — distinto de formatoFecha():
+// acá "sin fecha" significa "sin tope de ese lado", no "nunca entró".
+// timeZone explícito: el día calendario que importa es el de El
+// Salvador, no el del dispositivo de quien esté mirando el panel en
+// ese momento (podría estar de viaje, o el reloj del equipo mal
+// puesto).
+function formatoFechaCorta(iso) {
+  return iso ? new Date(iso).toLocaleDateString('es-SV', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/El_Salvador' }) : null;
+}
+
+// Aritmética en UTC a propósito: sumar días sobre un Date construido
+// desde un <input type="date"> en hora local puede saltarse un día
+// entero cerca de la medianoche según el huso horario del navegador.
+function sumarDias(fechaYMD, dias) {
+  const d = new Date(fechaYMD + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+
+// "-06:00" fijo, no una zona con nombre: El Salvador no tiene horario
+// de verano, así que el offset no cambia nunca — y así Postgres lo
+// guarda bien sin importar el timezone de SU sesión (Etc/UTC acá), que
+// nunca se tocó porque config.php solo fija la hora de PHP
+// (date_default_timezone_set), no la de la conexión PDO. Sin el
+// offset explícito, "20T23:59:59" se guardaba como 23:59:59 UTC —
+// 17:59:59 en El Salvador, el código vencía casi 6 horas antes de lo
+// que se veía en el selector. Encontrado probándolo de punta a punta
+// contra la app real, 2026-10-20.
+function inicioDeDiaSV(fechaYMD) {
+  return fechaYMD + 'T00:00:00-06:00';
+}
+function finDeDiaSV(fechaYMD) {
+  return fechaYMD + 'T23:59:59-06:00';
+}
+
+// El mismo problema pero al revés: un vigente_hasta guardado como
+// "23:59:59 de El Salvador" viaja de vuelta del servidor como
+// "05:59:59 del día siguiente" en UTC — cortar los primeros 10
+// caracteres de ESE string para rellenar el <input type="date"> daba
+// el día de más, y de ahí salía mal cualquier cálculo que partiera de
+// ese valor (como +1 semana). "en-CA" formatea como AAAA-MM-DD, que es
+// justo lo que un <input type="date"> espera.
+function fechaInputSV(iso) {
+  return iso ? new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' }) : '';
+}
+function hoySV() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
+}
+
+function textoVigencia(c) {
+  if (!c.activo) return 'Revocado';
+  const vencido = c.vigente_hasta && new Date(c.vigente_hasta) < new Date();
+  if (vencido) return `Vencido — era hasta ${formatoFechaCorta(c.vigente_hasta)}`;
+  const desde = formatoFechaCorta(c.vigente_desde);
+  const hasta = formatoFechaCorta(c.vigente_hasta);
+  if (!desde && !hasta) return 'Activo — sin fecha de vencimiento';
+  if (desde && hasta) return `Vigente del ${desde} al ${hasta}`;
+  if (hasta) return `Vigente hasta ${hasta}`;
+  return `Vigente desde ${desde}`;
 }
 
 function esqueleto() {
@@ -100,9 +161,16 @@ function pintarUsuarios(usuarios) {
 function pintarComunidades(comunidades) {
   document.getElementById('cfg-comunidades').innerHTML = comunidades.map((co) => {
     const codigos = co.codigos.map((c) => `
-      <div class="lista-item" style="padding-left:16px">
-        <div class="li-t"><b class="codigo-mono">${c.codigo}</b><small>${c.activo ? 'Activo' : 'Revocado'}</small></div>
-        ${c.activo ? `<span class="li-a" data-revocar="${c.id}">Revocar</span>` : ''}
+      <div class="lista-item" style="padding-left:16px;flex-wrap:wrap">
+        <div class="li-t"><b class="codigo-mono">${c.codigo}</b><small>${textoVigencia(c)}</small></div>
+        ${c.activo ? `
+          <div class="vigencia-controles">
+            <label>Desde <input type="date" data-vig-desde="${c.id}" value="${fechaInputSV(c.vigente_desde)}"></label>
+            <label>Hasta <input type="date" data-vig-hasta="${c.id}" value="${fechaInputSV(c.vigente_hasta)}"></label>
+            <span class="li-a" data-guardar-vigencia="${c.id}">Guardar</span>
+            <span class="li-a" data-extender="${c.id}">+1 semana</span>
+            <span class="li-a" data-revocar="${c.id}">Revocar</span>
+          </div>` : ''}
       </div>`).join('');
     return `
       <div style="margin-bottom:6px" data-comunidad-bloque="${co.id}">
@@ -119,6 +187,37 @@ function pintarComunidades(comunidades) {
       el.textContent = 'Revocando…';
       const r = await revocarCodigo(el.dataset.revocar);
       if (r.ok) await cargarComunidades();
+    });
+  });
+  document.querySelectorAll('[data-guardar-vigencia]').forEach((el) => {
+    el.addEventListener('click', async () => {
+      const id = el.dataset.guardarVigencia;
+      const desde = document.querySelector(`[data-vig-desde="${id}"]`).value;
+      const hasta = document.querySelector(`[data-vig-hasta="${id}"]`).value;
+      el.textContent = 'Guardando…';
+      // Inclusive: "hasta" llega a las 23:59:59 de ese día, no a la
+      // medianoche de inicio — pedido explícito de Marco.
+      const r = await actualizarVigenciaCodigo(id, {
+        vigente_desde: desde ? inicioDeDiaSV(desde) : null,
+        vigente_hasta: hasta ? finDeDiaSV(hasta) : null,
+      });
+      if (r.ok) await cargarComunidades();
+      else { el.textContent = 'Guardar'; alert('No se pudo guardar la vigencia: ' + r.error); }
+    });
+  });
+  document.querySelectorAll('[data-extender]').forEach((el) => {
+    el.addEventListener('click', async () => {
+      const id = el.dataset.extender;
+      // Si ya tenía una fecha "hasta", extiende DESDE esa fecha (dos
+      // clics seguidos suman 14 días, no pisan el primero). Si no
+      // tenía ninguna, arranca desde hoy.
+      const inputHasta = document.querySelector(`[data-vig-hasta="${id}"]`);
+      const base = inputHasta.value || hoySV();
+      const nuevaFecha = sumarDias(base, 7);
+      el.textContent = 'Extendiendo…';
+      const r = await actualizarVigenciaCodigo(id, { vigente_hasta: finDeDiaSV(nuevaFecha) });
+      if (r.ok) await cargarComunidades();
+      else { el.textContent = '+1 semana'; alert('No se pudo extender: ' + r.error); }
     });
   });
   document.querySelectorAll('[data-generar]').forEach((el) => {

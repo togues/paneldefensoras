@@ -135,6 +135,12 @@ export function revocarCodigo(id) {
   return pedir('/admin/codigos/' + encodeURIComponent(id), { method: 'PATCH' });
 }
 
+// Fija o extiende la ventana de vigencia de un código — nunca junto
+// con revocar (ver la nota larga en admin/codigos.php).
+export function actualizarVigenciaCodigo(id, cambios) {
+  return pedir('/admin/codigos/' + encodeURIComponent(id), { method: 'PATCH', body: cambios });
+}
+
 export function obtenerRespaldos() {
   return pedir('/admin/respaldos');
 }
