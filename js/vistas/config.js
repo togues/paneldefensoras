@@ -15,6 +15,8 @@
 import { obtenerUsuarios, crearUsuario, actualizarUsuario, obtenerComunidades, crearComunidad, actualizarComunidad, generarCodigo, revocarCodigo, actualizarVigenciaCodigo } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
+import { cargarLeaflet } from '../core/cargador-librerias.js';
+import { esVistaActiva } from '../main.js';
 
 let cantonesCache = [];
 let comunidadesCache = [];
@@ -105,8 +107,14 @@ function opcionesTipoComunidad(valorActual) {
 // vistas/mapa.js). El guard `_leaflet_id` evita el error "Map
 // container is already initialized" si el mismo formulario se abre
 // más de una vez sin que el contenedor se vuelva a crear de cero.
-function activarMapaUbicacion(contenedor, { latInicial, lonInicial, onCambio }) {
+// Async porque Leaflet ya no viene cargado de entrada (ver
+// core/cargador-librerias.js): Configuración no lo necesitaba hasta
+// que se agregó este mapita, así que hay que esperar a que esté listo
+// antes de usar `L`.
+async function activarMapaUbicacion(contenedor, { latInicial, lonInicial, onCambio }) {
   if (contenedor._leaflet_id) return contenedor._controlUbicacion; // ya estaba activo, no se reinicia
+  await cargarLeaflet();
+  if (!esVistaActiva('config') || !document.body.contains(contenedor)) return null; // se navegó a otra vista mientras tanto
   const centro = latInicial != null ? [latInicial, lonInicial] : [13.7, -88.9];
   const mapa = L.map(contenedor).setView(centro, latInicial != null ? 13 : 8);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 18 }).addTo(mapa);
@@ -332,11 +340,11 @@ function pintarComunidades(comunidades) {
   // edición abiertos, aunque nadie los fuera a tocar — Marco lo
   // notó comparando con una maqueta mucho más despejada, 2026-10-20.
   document.querySelectorAll('[data-mostrar-editar-comunidad]').forEach((el) => {
-    el.addEventListener('click', () => {
+    el.addEventListener('click', async () => {
       const id = el.dataset.mostrarEditarComunidad;
       document.querySelector(`[data-editor-comunidad="${id}"]`).hidden = false;
       const co = comunidades.find((c) => String(c.id) === id);
-      activarMapaUbicacion(document.querySelector(`[data-mapa-comunidad="${id}"]`), {
+      await activarMapaUbicacion(document.querySelector(`[data-mapa-comunidad="${id}"]`), {
         latInicial: co?.lat ?? null,
         lonInicial: co?.lon ?? null,
         onCambio: (lat, lon) => {
@@ -468,6 +476,7 @@ function pintarComunidades(comunidades) {
 
 async function cargarUsuarios() {
   const r = await obtenerUsuarios();
+  if (!esVistaActiva('config')) return; // se navegó a otra vista mientras tanto
   if (r.ok) pintarUsuarios(r.data.usuarios);
 }
 
@@ -484,6 +493,7 @@ function comunidadesFiltradas(filtro) {
 
 async function cargarComunidades() {
   const r = await obtenerComunidades();
+  if (!esVistaActiva('config')) return; // se navegó a otra vista mientras tanto
   if (!r.ok) return;
   comunidadesCache = r.data.comunidades;
   pintarKpisComunidades(comunidadesCache);
@@ -518,10 +528,10 @@ function enlazarFormularios() {
   });
 
   const formC = document.getElementById('cfg-form-comunidad');
-  document.getElementById('cfg-mostrar-form-comunidad').addEventListener('click', () => {
+  document.getElementById('cfg-mostrar-form-comunidad').addEventListener('click', async () => {
     formC.style.display = 'block';
     // Recién visible: ahora sí tiene tamaño real para que Leaflet lo mida.
-    activarMapaUbicacion(document.getElementById('cfg-c-mapa'), {
+    await activarMapaUbicacion(document.getElementById('cfg-c-mapa'), {
       latInicial: null,
       lonInicial: null,
       onCambio: (lat, lon) => {
@@ -575,6 +585,12 @@ export async function montar(raiz) {
 
   raiz.innerHTML = esqueleto();
   enlazarFormularios();
+  // Sin esperar: el mapita de ubicación recién hace falta si la
+  // persona abre "Nueva comunidad" o "Editar" — probablemente unos
+  // segundos después de que esta vista ya esté en pantalla. Pedirlo
+  // ahora, de fondo, evita que el primer clic en el mapa se sienta
+  // "muerto" mientras Leaflet todavía está bajando del CDN.
+  cargarLeaflet();
   await cargarUsuarios();
   await cargarComunidades();
 }

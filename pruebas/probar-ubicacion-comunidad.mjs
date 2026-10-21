@@ -42,6 +42,12 @@ await paso('crear_comunidad_marcando_un_punto_en_el_mapa', async () => {
   // page.mouse.click() usa coordenadas de viewport, no de página — sin
   // desplazar primero, el clic cae fuera de lo visible y no pasa nada
   // (encontrado de verdad corriendo esta prueba, 2026-10-20).
+  // Leaflet se carga diferido (core/cargador-librerias.js) — hay que
+  // esperar a que el mapa esté de verdad inicializado (la clase
+  // .leaflet-container la pone Leaflet, no el HTML propio) antes de
+  // hacerle clic; si no, el clic cae en un <div> todavía vacío y no
+  // pasa nada. Encontrado al agregar la carga diferida, 2026-10-20.
+  await p.waitForSelector('#cfg-c-mapa.leaflet-container', { timeout: 4000 });
   await p.locator('#cfg-c-mapa').scrollIntoViewIfNeeded();
   const caja = await p.locator('#cfg-c-mapa').boundingBox();
   await p.mouse.click(caja.x + caja.width / 2, caja.y + caja.height / 2);
@@ -76,6 +82,7 @@ await paso('la_comunidad_guardo_lat_lon_reales', async () => {
 
 await paso('mover_el_punto_y_guardar_lo_actualiza', async () => {
   const bloque = p.locator(`[data-comunidad-bloque="${idComunidad}"]`);
+  await p.waitForSelector(`[data-mapa-comunidad="${idComunidad}"].leaflet-container`, { timeout: 4000 });
   await bloque.locator(`[data-mapa-comunidad="${idComunidad}"]`).scrollIntoViewIfNeeded();
   const caja = await bloque.locator(`[data-mapa-comunidad="${idComunidad}"]`).boundingBox();
   // Un punto bien distinto al centro, para confirmar que de verdad cambia.

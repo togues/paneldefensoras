@@ -11,6 +11,8 @@
    ===================================================================== */
 import { obtenerEstadisticas } from '../data/api-client.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
+import { cargarChartJs } from '../core/cargador-librerias.js';
+import { esVistaActiva } from '../main.js';
 
 const NOMBRE_FAMILIA = { persona: 'Agresiones a personas', territorio: 'Agua, tierra y medios de vida', gestion: 'Gestiones', logro: 'Logros' };
 const COLOR_FAMILIA = { persona: '#A32B1E', territorio: '#B0620A', gestion: '#5B4B8A', logro: '#2D6A4F' };
@@ -158,7 +160,9 @@ export async function montar(raiz) {
   raiz.innerHTML = esqueleto();
   raiz.innerHTML += '<p class="cargando" id="r-cargando">Cargando datos reales del observatorio…</p>';
 
-  const r = await obtenerEstadisticas();
+  // En paralelo, no uno después del otro: ninguno depende del otro.
+  const [r] = await Promise.all([obtenerEstadisticas(), cargarChartJs()]);
+  if (!esVistaActiva('resumen')) return; // se navegó a otra vista mientras tanto
   const cargando = document.getElementById('r-cargando');
   if (cargando) cargando.remove();
 

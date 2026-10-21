@@ -8,13 +8,13 @@
 <!-- CDN, con el visto bueno de Marco para el panel (sí o sí en línea,
      a diferencia de la app comunitaria — ver CLAUDE.md, "Sin librerías
      de interfaz de terceros" es una regla de app/, no de panel/).
-     Versión exacta fijada, nunca "latest". -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+     Versión exacta fijada, nunca "latest".
+
+     Chart.js y Leaflet (+ markercluster) YA NO van acá: cargaban
+     siempre, bloqueando el arranque, para las siete vistas aunque
+     cada una la necesite a lo sumo una de las dos. Se cargan solo
+     cuando la vista que las usa de verdad se abre — ver
+     js/core/cargador-librerias.js. -->
 <style>#r-mapa{height:560px;border-radius:var(--r-s);border:1px solid var(--outline-var)}</style>
 </head>
 <body>

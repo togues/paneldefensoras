@@ -28,6 +28,22 @@ const appShell = document.getElementById('app-shell');
 const cargadas = {};
 let navEnlazada = false;
 
+// Desde que las vistas con gráfica o mapa cargan Chart.js/Leaflet de
+// forma diferida (core/cargador-librerias.js), su montar() queda "en
+// vuelo" más tiempo que antes — si alguien navega a otra vista
+// mientras tanto, esa espera termina igual y sigue intentando pintar
+// en elementos que ya no existen (raiz.innerHTML los reemplazó), con
+// un "Cannot set properties of null" en consola. Las vistas que
+// cargan una librería así (resumen.js, analisis.js, mapa.js) importan
+// esVistaActiva() y verifican, justo después de esperar, que siguen
+// siendo la vista vigente antes de tocar el DOM. Encontrado con la
+// propia prueba automatizada navegando más rápido de lo que un click
+// humano normalmente lo haría, 2026-10-20.
+let vistaActiva = null;
+export function esVistaActiva(nombre) {
+  return vistaActiva === nombre;
+}
+
 function pintarEnConstruccion(nombre) {
   raiz.innerHTML = `
     <div class="head"><div><h1>${NOMBRE_VISTA[nombre] || nombre}</h1></div></div>
@@ -35,6 +51,7 @@ function pintarEnConstruccion(nombre) {
 }
 
 async function montarVista(nombre) {
+  vistaActiva = nombre;
   document.querySelectorAll('.lat a[data-v]').forEach((a) => {
     a.classList.toggle('on', a.dataset.v === nombre);
   });
@@ -44,6 +61,7 @@ async function montarVista(nombre) {
     return;
   }
   if (!cargadas[nombre]) cargadas[nombre] = await VISTAS_LISTAS[nombre]();
+  if (vistaActiva !== nombre) return; // se navegó a otra vista mientras se importaba esta
   await cargadas[nombre].montar(raiz);
 }
 

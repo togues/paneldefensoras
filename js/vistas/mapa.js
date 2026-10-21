@@ -27,6 +27,8 @@
    ===================================================================== */
 import { obtenerMapa } from '../data/api-client.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
+import { cargarLeafletConClusters } from '../core/cargador-librerias.js';
+import { esVistaActiva } from '../main.js';
 
 const COLOR_ESTADO = { recibido: '#A32B1E', en_investigacion: '#B0620A', cerrado: '#2D6A4F', descartado: '#6F7976' };
 const ETIQ_ESTADO = { recibido: 'Sin revisar', en_investigacion: 'En investigación', cerrado: 'Cerrado', descartado: 'Descartado' };
@@ -117,7 +119,8 @@ export async function montar(raiz) {
   raiz.innerHTML = esqueleto();
   raiz.insertAdjacentHTML('beforeend', '<p class="cargando" id="m-cargando">Cargando reportes georreferenciados…</p>');
 
-  const r = await obtenerMapa();
+  const [r] = await Promise.all([obtenerMapa(), cargarLeafletConClusters()]);
+  if (!esVistaActiva('mapa')) return; // se navegó a otra vista mientras tanto
   const cargando = document.getElementById('m-cargando');
   if (cargando) cargando.remove();
 

@@ -38,8 +38,16 @@ await p.fill('#login-clave', 'prueba-dev-2026');
 await p.click('#login-boton');
 await p.waitForSelector('#app-shell:not([hidden])', { timeout: 8000 });
 
-const correoOperador = 'verif-mapa-exacto-' + Date.now() + '@dev.local';
+const sufijo = Date.now();
+const correoOperador = 'verif-mapa-exacto-' + sufijo + '@dev.local';
 const claveOperador = 'clave-verif-mapa-12345';
+// Con marca de tiempo también en el NOMBRE, no solo en el correo: dos
+// corridas de esta prueba el mismo día dejaban dos cuentas con el
+// nombre idéntico "Verificación mapa exacto", y la limpieza final
+// (que busca por ese texto) reventaba en modo estricto de Playwright
+// al encontrar más de una — mismo patrón ya visto en
+// probar-config-participacion.mjs, 2026-10-20.
+const nombreOperador = 'Verificación mapa exacto ' + sufijo;
 
 await paso('administrador_ve_el_punto_exacto_en_el_mapa_general', async () => {
   const r = await p.evaluate(async () => {
@@ -63,15 +71,15 @@ await paso('la_leyenda_del_mapa_distingue_punto_exacto_de_centro_de_comunidad', 
 });
 
 await paso('crear_operador_de_prueba', async () => {
-  const r = await p.evaluate(async ({ correo, clave }) => {
+  const r = await p.evaluate(async ({ nombre, correo, clave }) => {
     const t = JSON.parse(localStorage.getItem('panel_sesion')).token;
     const resp = await fetch('http://localhost:8080/api/v1/admin/usuarios', {
       method: 'POST',
       headers: { 'X-App-Secret': 'dev_secret_local', Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre: 'Verificación mapa exacto', correo, clave, rol: 'operador' }),
+      body: JSON.stringify({ nombre, correo, clave, rol: 'operador' }),
     });
     return resp.json();
-  }, { correo: correoOperador, clave: claveOperador });
+  }, { nombre: nombreOperador, correo: correoOperador, clave: claveOperador });
   if (!r.success) throw new Error('no se pudo crear el operador de prueba: ' + JSON.stringify(r));
 });
 
@@ -113,7 +121,7 @@ await paso('limpieza_desactivar_operador_de_prueba', async () => {
   await p.waitForSelector('#app-shell:not([hidden])', { timeout: 8000 });
   await p.click('.lat a[data-v="config"]');
   await p.waitForSelector('#cfg-usuarios .lista-item', { timeout: 8000 });
-  const fila = p.locator('.lista-item', { hasText: 'Verificación mapa exacto' });
+  const fila = p.locator('.lista-item', { hasText: nombreOperador });
   await fila.locator('[data-usuario-toggle]').click();
   await p.waitForTimeout(500);
 });

@@ -24,6 +24,8 @@
 import { obtenerAnalisis, obtenerParticipacion } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
+import { cargarChartJs } from '../core/cargador-librerias.js';
+import { esVistaActiva } from '../main.js';
 
 const NOMBRE_FAMILIA = { persona: 'Contra personas', territorio: 'Agua, tierra y medios de vida', gestion: 'Gestiones', logro: 'Logros' };
 const COLOR_FAMILIA = { persona: '#A32B1E', territorio: '#B0620A', gestion: '#5B4B8A', logro: '#2D6A4F' };
@@ -179,7 +181,8 @@ export async function montar(raiz) {
   raiz.innerHTML = esqueleto();
   raiz.insertAdjacentHTML('beforeend', '<p class="cargando" id="a-cargando">Cargando…</p>');
 
-  const r = await obtenerAnalisis();
+  const [r] = await Promise.all([obtenerAnalisis(), cargarChartJs()]);
+  if (!esVistaActiva('analisis')) return; // se navegó a otra vista mientras tanto
   document.getElementById('a-cargando')?.remove();
 
   if (!r.ok) {
@@ -205,6 +208,7 @@ export async function montar(raiz) {
   }
   contParticipacion.innerHTML = esqueletoParticipacion();
   const rp = await obtenerParticipacion();
+  if (!esVistaActiva('analisis')) return; // se navegó a otra vista mientras tanto
   if (rp.ok) pintarParticipacion(rp.data);
   else contParticipacion.innerHTML = `<p class="error-carga">No se pudo cargar Participación: ${rp.error}</p>`;
 }

@@ -24,6 +24,7 @@
 import { obtenerCasos, obtenerCaso, obtenerCatalogos, actualizarCaso, publicarCaso, obtenerEvidenciaUrl, eliminarEvidencia } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
+import { cargarLeaflet } from '../core/cargador-librerias.js';
 
 const ETIQ_ESTADO = { recibido: 'Sin revisar', en_investigacion: 'En investigación', cerrado: 'Cerrado', descartado: 'Descartado' };
 const CLASE_ESTADO = { recibido: 'p-n', en_investigacion: 'p-i', cerrado: 'p-c', descartado: 'p-i' };
@@ -413,7 +414,13 @@ async function abrirDetalle(id) {
 
   document.getElementById('c-cerrar').addEventListener('click', cerrarDetalle);
   cargarMiniaturasEvidencia(idsEvidencias);
-  if (c.coordenada_exacta) montarMapaDetalleExacto(c.coordenada_exacta);
+  // Leaflet ya no viene cargado de entrada (core/cargador-librerias.js)
+  // — la mayoría de los casos no tiene punto exacto, así que no vale
+  // la pena pedirlo salvo que este caso en particular sí lo tenga.
+  if (c.coordenada_exacta) {
+    await cargarLeaflet();
+    montarMapaDetalleExacto(c.coordenada_exacta);
+  }
 
   document.getElementById('c-guardar').addEventListener('click', async () => {
     const boton = document.getElementById('c-guardar');
@@ -486,8 +493,8 @@ function cerrarDetalle() {
 /**
  * Mapa chico con un marcador en el punto exacto que la persona marcó
  * al reportar — ver docs/decision-05-coordenada-exacta-panel.md.
- * Leaflet ya está cargado globalmente (lo usa vistas/mapa.js), no hace
- * falta agregar nada nuevo acá.
+ * Quien llama a esta función (abrirDetalle) ya esperó
+ * cargarLeaflet() antes — acá `window.L` siempre existe.
  */
 function montarMapaDetalleExacto(coordenada) {
   const nodo = document.getElementById('c-mapa-exacto');
