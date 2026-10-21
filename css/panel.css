@@ -350,3 +350,37 @@ tbody tr:hover{background:var(--surface-1)}
 #usuario-pie b{display:block;color:#fff;font-size:13px;margin-bottom:2px}
 #usuario-pie a{color:#7FA39B;cursor:pointer;text-decoration:underline;display:inline-flex;align-items:center;gap:4px}
 #usuario-pie a .i{width:12px;height:12px}
+
+/* Galería de evidencias (vistas/galeria.js) — sin bordes: cada foto se
+   separa por espacio y una sombra suave, y la jerarquía la da la
+   tipografía (folio en negrita, metadatos en gris chico), siguiendo
+   los principios de diseño de Marco (.claude/skills/rediseno-admin).
+   Cada cuadro es un <button> real: se alcanza y se abre con teclado. */
+.gal-filtros{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.gal-filtros .filtros{margin-bottom:17px}
+button.filtro{font-family:inherit}
+button.filtro:focus-visible{outline:3px solid var(--primary-c);outline-offset:2px}
+.gal-grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+.gal-foto{display:flex;flex-direction:column;padding:0;border:0;text-align:left;cursor:pointer;
+  background:var(--surface);border-radius:var(--r-m);overflow:hidden;box-shadow:var(--e1);
+  font-family:inherit;color:inherit;transition:box-shadow .15s,transform .15s}
+.gal-foto:hover{box-shadow:var(--e2);transform:translateY(-2px)}
+.gal-foto:focus-visible{outline:3px solid var(--primary-c);outline-offset:3px}
+.gal-img{display:block;aspect-ratio:4/3;background:var(--surface-2) center/cover no-repeat}
+.gal-img.cargando-foto{background-image:linear-gradient(110deg,var(--surface-2) 30%,var(--surface-1) 50%,var(--surface-2) 70%);
+  background-size:200% 100%;animation:gal-brillo 1.3s linear infinite}
+.gal-img.gal-img-error{background-image:none;background-color:var(--surface-2)}
+.gal-pie{display:flex;flex-direction:column;gap:3px;padding:10px 12px 12px;min-width:0}
+.gal-pie-fila{display:flex;justify-content:space-between;align-items:center;gap:4px 8px;flex-wrap:wrap}
+.gal-pie b{font-size:13px;letter-spacing:.01em;white-space:nowrap}
+.gal-filtros select{max-width:240px}
+.gal-pie small{font-size:11.5px;color:var(--on-surface-var);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gal-pie .pill{padding:3px 9px;font-size:10.5px}
+.gal-fantasma{cursor:default;box-shadow:none}
+.gal-fantasma:hover{transform:none;box-shadow:none}
+.gal-vacio{grid-column:1/-1;padding:30px 0;text-align:center}
+.gal-mas{display:flex;justify-content:center;margin-top:22px}
+@keyframes gal-brillo{from{background-position:100% 0}to{background-position:-100% 0}}
+@media (prefers-reduced-motion:reduce){.gal-img.cargando-foto{animation:none}.gal-foto{transition:none}}
+@media (max-width:640px){.gal-grilla{grid-template-columns:repeat(2,1fr);gap:10px}}
+.lat a[hidden]{display:none}

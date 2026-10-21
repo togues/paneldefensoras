@@ -203,9 +203,25 @@ export function eliminarEvidencia(id) {
   return pedir('/admin/evidencias/' + encodeURIComponent(id), { method: 'DELETE' });
 }
 
-export async function obtenerEvidenciaUrl(id) {
+// Solo administrador (admin/galeria.php) — metadatos de cada foto y de
+// su caso; los bytes de la imagen se piden aparte con
+// obtenerEvidenciaUrl(id, { miniatura: true }).
+export function obtenerGaleria(filtros = {}) {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(filtros)) {
+    if (v !== '' && v !== null && v !== undefined) params.set(k, v);
+  }
+  const qs = params.toString();
+  return pedir('/admin/galeria' + (qs ? '?' + qs : ''));
+}
+
+// `miniatura: true` pide la versión chica (~400px, lib/Miniatura.php
+// del API) — para cuadritos de galería y del detalle; la completa solo
+// cuando alguien la abre de verdad.
+export async function obtenerEvidenciaUrl(id, { miniatura = false } = {}) {
   try {
-    const respuesta = await fetch(buildUrl('/admin/evidencias/' + encodeURIComponent(id)), { headers: buildHeaders() });
+    const ruta = '/admin/evidencias/' + encodeURIComponent(id) + (miniatura ? '?tam=miniatura' : '');
+    const respuesta = await fetch(buildUrl(ruta), { headers: buildHeaders() });
     if (!respuesta.ok) {
       if (respuesta.status === 401) window.dispatchEvent(new CustomEvent('panel:sesion-invalida'));
       return { ok: false };

@@ -53,6 +53,14 @@ function liberarUrlsFotos() {
 // antes de crear otra sobre el mismo <div>, tira "Map container is
 // already initialized".
 let mapaDetalleExacto = null;
+
+// Qué refrescar "de fondo" después de guardar, publicar o borrar una
+// foto desde la ficha — en Casos es la tabla; desde la Galería
+// (vistas/galeria.js, vía abrirFichaCaso) es la grilla de fotos. Antes
+// esto era un cargarTabla() fijo, que desde otra vista revienta porque
+// #c-tabla no existe.
+let alCambiarDetalle = () => cargarTabla();
+let overlayEnlazado = false;
 function liberarMapaDetalleExacto() {
   if (mapaDetalleExacto) {
     mapaDetalleExacto.remove();
@@ -452,7 +460,7 @@ async function abrirDetalle(id) {
     }
 
     await abrirDetalle(id); // re-pinta con la bitácora y el estado ya actualizados
-    cargarTabla(); // refleja el cambio en la fila de fondo sin cerrar el detalle
+    alCambiarDetalle(); // refleja el cambio de fondo sin cerrar el detalle
   });
 
   document.getElementById('c-publicar')?.addEventListener('click', async () => {
@@ -480,7 +488,7 @@ async function abrirDetalle(id) {
     }
 
     await abrirDetalle(id);
-    cargarTabla();
+    alCambiarDetalle();
   });
 }
 
@@ -517,14 +525,15 @@ function montarMapaDetalleExacto(coordenada) {
 
 /**
  * Trae cada fotografía por separado (no bloquea la primera que ya
- * llegó esperando a las demás) y la pone tanto en su miniatura como
- * guardada para el lightbox — así "ver completa" no vuelve a pedirla.
+ * llegó esperando a las demás), en versión MINIATURA (~10-40 KB en vez
+ * del original de hasta 5 MB). La completa se pide recién al
+ * ampliarla — ver abrirFotoCompleta().
  */
 async function cargarMiniaturasEvidencia(ids) {
   await Promise.all(ids.map(async (idFoto) => {
     const boton = document.querySelector(`.fotito[data-foto="${idFoto}"]`);
     if (!boton) return; // el detalle pudo cerrarse antes de que llegara
-    const r = await obtenerEvidenciaUrl(idFoto);
+    const r = await obtenerEvidenciaUrl(idFoto, { miniatura: true });
     if (!r.ok) {
       boton.classList.remove('cargando-foto');
       boton.classList.add('fotito-error');
@@ -538,10 +547,22 @@ async function cargarMiniaturasEvidencia(ids) {
   }));
 }
 
-function abrirFotoCompleta(url) {
+// Abre de inmediato con la miniatura (ya está en memoria) y la cambia
+// por la completa cuando llega — se ve algo al instante en vez de una
+// pantalla negra esperando hasta 5 MB por una conexión lenta.
+async function abrirFotoCompleta(boton) {
   const lightbox = document.getElementById('foto-lightbox');
-  lightbox.querySelector('img').src = url;
+  const img = lightbox.querySelector('img');
+  img.src = boton.dataset.fotoCompletaUrl || boton.dataset.fotoUrl;
   lightbox.classList.add('on');
+  if (boton.dataset.fotoCompletaUrl) return;
+
+  const r = await obtenerEvidenciaUrl(boton.dataset.foto);
+  if (!r.ok) return; // se queda con la miniatura, que ya se ve
+  urlsFotosActuales.push(r.url);
+  boton.dataset.fotoCompletaUrl = r.url;
+  // Solo si sigue abierta esta misma foto — pudo cerrarse o cambiarse.
+  if (lightbox.classList.contains('on') && img.src === boton.dataset.fotoUrl) img.src = r.url;
 }
 
 function cerrarFotoCompleta() {
@@ -570,7 +591,7 @@ async function borrarFoto(boton) {
 
   const idCaso = document.getElementById('detalle').dataset.casoId;
   if (idCaso) await abrirDetalle(idCaso); // re-pinta sin la foto borrada y con la nota ya en la bitácora
-  cargarTabla();
+  alCambiarDetalle();
 }
 
 function enlazarLightboxFotos() {
@@ -581,7 +602,7 @@ function enlazarLightboxFotos() {
       return;
     }
     const verBoton = e.target.closest('.fotito[data-foto-url]');
-    if (verBoton) abrirFotoCompleta(verBoton.dataset.fotoUrl);
+    if (verBoton) abrirFotoCompleta(verBoton);
   });
   const lightbox = document.getElementById('foto-lightbox');
   lightbox.addEventListener('click', (e) => { if (e.target === lightbox) cerrarFotoCompleta(); });
@@ -736,20 +757,33 @@ function enlazarExportar() {
   document.getElementById('c-exportar-pdf').addEventListener('click', (e) => abrirInformePdf(e.currentTarget));
 }
 
-let overlayEnlazado = false;
+function enlazarOverlayUnaVez() {
+  if (overlayEnlazado) return;
+  enlazarOverlay();
+  enlazarLightboxFotos();
+  overlayEnlazado = true;
+}
+
+/**
+ * La misma ficha de caso de esta vista, abierta desde otra (hoy, la
+ * Galería). `alCambiar` es lo que esa otra vista quiere refrescar
+ * después de guardar/publicar/borrar una foto desde la ficha.
+ */
+export function abrirFichaCaso(id, { alCambiar } = {}) {
+  enlazarOverlayUnaVez();
+  alCambiarDetalle = alCambiar || (() => {});
+  return abrirDetalle(id);
+}
 
 export async function montar(raiz) {
   raiz.innerHTML = esqueleto();
   filtroEstado = 'todos';
   paginaActual = 1;
+  alCambiarDetalle = () => cargarTabla();
   enlazarFiltrosEstado();
   enlazarBarraFiltros();
   enlazarExportar();
-  if (!overlayEnlazado) {
-    enlazarOverlay();
-    enlazarLightboxFotos();
-    overlayEnlazado = true;
-  }
+  enlazarOverlayUnaVez();
   await cargarComunidades();
   await cargarDepartamentos();
   await cargarTabla();

@@ -66,9 +66,11 @@ await paso('tipos_frecuentes_tiene_barras', async () => {
   if (barras === 0) throw new Error('no hay barras de tipos de hecho');
 });
 
-await paso('nav_lateral_completa_las_siete_vistas', async () => {
+// 8 desde la Galería (2026-10-20) — su enlace existe siempre en el
+// HTML, oculto para quien no es administrador.
+await paso('nav_lateral_completa_las_ocho_vistas', async () => {
   const enlaces = await p.locator('.lat a[data-v]').count();
-  if (enlaces !== 7) throw new Error('esperaba 7 enlaces en la barra lateral, hay ' + enlaces);
+  if (enlaces !== 8) throw new Error('esperaba 8 enlaces en la barra lateral, hay ' + enlaces);
 });
 
 await paso('las_siete_vistas_ya_estan_construidas_ninguna_avisa_pendiente', async () => {

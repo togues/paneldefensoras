@@ -14,6 +14,7 @@ import { montar as montarLogin } from './pantalla-login.js';
 const VISTAS_LISTAS = {
   resumen: () => import('./vistas/resumen.js'),
   mapa: () => import('./vistas/mapa.js'),
+  galeria: () => import('./vistas/galeria.js'),
   casos: () => import('./vistas/casos.js'),
   analisis: () => import('./vistas/analisis.js'),
   salud: () => import('./vistas/salud.js'),
@@ -92,6 +93,11 @@ function mostrarShell() {
   pantallaLogin.hidden = true;
   pantallaLogin.innerHTML = '';
   appShell.hidden = false;
+  // Solo esconde el enlace — quien decide de verdad es el servidor
+  // (obRequireRolAdministrador), y la vista misma avisa si alguien
+  // llega igual.
+  const esAdmin = sesion.usuarioActual()?.rol === 'administrador';
+  document.querySelectorAll('.lat [data-solo-admin]').forEach((a) => { a.hidden = !esAdmin; });
   enlazarNav();
   pintarUsuarioPie();
   montarVista('resumen');

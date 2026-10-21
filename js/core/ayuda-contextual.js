@@ -35,6 +35,12 @@ const CONTENIDOS = {
     texto: 'Cada punto se ubica en el centro de la comunidad, nunca en el lugar exacto del hecho — es a propósito: en un caserío pequeño, una coordenada exacta puede señalar una vivienda. Por eso varios reportes de la misma comunidad se agrupan (racimo); tóquelo para desarmarlo y ver uno por uno.',
     lista: ['Filtre por familia con los chips de arriba del mapa.', 'La rueda del mouse hace zoom directo, sin pasar por los controles.']
   },
+  galeria: {
+    overline: 'Ayuda · Galería',
+    titulo: '¿Para qué sirve la galería?',
+    texto: 'Recorre la evidencia fotográfica de todos los casos, de la más reciente a la más vieja — al revés que en Casos: acá se parte de la foto. Toque cualquier foto para abrir la ficha completa del caso al que pertenece. Solo la ve un administrador, y nunca sale del panel: ni al muro público ni a ninguna exportación.',
+    lista: ['Filtre por tipo de hecho, departamento o comunidad.', 'Las fotos se cargan a medida que baja, en versión liviana; la completa se ve al ampliarla desde la ficha.']
+  },
   'casos-filtros': {
     overline: 'Ayuda · Buscar y filtrar',
     titulo: '¿Cómo combino varios filtros?',
