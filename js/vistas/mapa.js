@@ -97,8 +97,13 @@ export async function montar(raiz) {
   filtroActual = 'todos';
 
   const resumen = document.getElementById('m-resumen');
+  // No es "sin comunidad asignada" (eso es otra cosa, y casi nunca
+  // pasa) — es que su comunidad SÍ está asignada pero todavía no
+  // tiene un punto de referencia guardado (ver admin/comunidades.php,
+  // el formulario de Configuración). Decía mal esto hasta que Marco
+  // lo notó al ver el mapa vacío en producción, 2026-10-20.
   resumen.textContent = `${puntosCargados.length} reportes georreferenciados` +
-    (r.data.sin_ubicacion ? ` · ${r.data.sin_ubicacion} sin comunidad asignada` : '');
+    (r.data.sin_ubicacion ? ` · ${r.data.sin_ubicacion} con comunidad sin ubicación guardada` : '');
 
   // El contenedor recién quedó en el DOM: Leaflet necesita medir su
   // tamaño real, no puede iniciarse antes de que exista.

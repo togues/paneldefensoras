@@ -95,6 +95,45 @@ function opcionesTipoComunidad(valorActual) {
   return conocidas;
 }
 
+// Mapa Leaflet chico de un solo punto, para marcar dónde queda una
+// comunidad — NUNCA un límite real (eso es bd/cartografia/, que
+// además no va a cubrir "comunidad": ver la nota larga en
+// admin/comunidades.php). Se inicializa perezoso, la primera vez que
+// se revela el formulario que lo contiene — Leaflet necesita medir un
+// contenedor con tamaño real, y mientras el formulario está `display:
+// none` o `hidden` no lo tiene (mismo motivo documentado en
+// vistas/mapa.js). El guard `_leaflet_id` evita el error "Map
+// container is already initialized" si el mismo formulario se abre
+// más de una vez sin que el contenedor se vuelva a crear de cero.
+function activarMapaUbicacion(contenedor, { latInicial, lonInicial, onCambio }) {
+  if (contenedor._leaflet_id) return contenedor._controlUbicacion; // ya estaba activo, no se reinicia
+  const centro = latInicial != null ? [latInicial, lonInicial] : [13.7, -88.9];
+  const mapa = L.map(contenedor).setView(centro, latInicial != null ? 13 : 8);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 18 }).addTo(mapa);
+
+  let marcador = latInicial != null ? L.marker(centro, { draggable: true }).addTo(mapa) : null;
+  if (marcador) marcador.on('dragend', () => { const p = marcador.getLatLng(); onCambio(p.lat, p.lng); });
+
+  mapa.on('click', (e) => {
+    if (marcador) {
+      marcador.setLatLng(e.latlng);
+    } else {
+      marcador = L.marker(e.latlng, { draggable: true }).addTo(mapa);
+      marcador.on('dragend', () => { const p = marcador.getLatLng(); onCambio(p.lat, p.lng); });
+    }
+    onCambio(e.latlng.lat, e.latlng.lng);
+  });
+
+  // Para el formulario de creación: tras guardar con éxito hay que
+  // borrar el marcador que quedó puesto, si no el próximo "Nueva
+  // comunidad" lo muestra todavía ahí aunque los campos ocultos ya
+  // estén vacíos (formC.reset() limpia los <input>, no el mapa).
+  contenedor._controlUbicacion = {
+    quitarMarcador() { if (marcador) { mapa.removeLayer(marcador); marcador = null; } mapa.setView([13.7, -88.9], 8); },
+  };
+  return contenedor._controlUbicacion;
+}
+
 function textoVigencia(c) {
   // No repite "Revocado": la insignia de estado (estadoCodigo) ya lo
   // dice — antes las dos cosas decían lo mismo y rompía la prueba de
@@ -164,6 +203,11 @@ function esqueleto() {
           </div>
           <div class="campo-grupo" style="flex:1;min-width:220px"><label>Cantón</label><select class="campo-filtro" id="cfg-c-canton"></select></div>
         </div>
+        <label>Ubicación de referencia (opcional) — click en el mapa para marcar el centro aproximado de la comunidad</label>
+        <div class="mapa-mini" id="cfg-c-mapa"></div>
+        <p class="mapa-mini-ayuda" id="cfg-c-ubicacion-texto">Sin marcar — la comunidad no va a aparecer en el Mapa de incidencias hasta que tenga un punto.</p>
+        <input type="hidden" id="cfg-c-lat">
+        <input type="hidden" id="cfg-c-lon">
         <div id="cfg-c-error" style="display:none" class="error-carga"></div>
         <button class="btn chico" type="submit">Crear comunidad y generar código</button>
         <button class="btn ghost chico" type="button" id="cfg-c-cancelar">Cancelar</button>
@@ -260,14 +304,22 @@ function pintarComunidades(comunidades) {
           <span class="li-a peligro" data-comunidad-toggle="${co.id}" data-activo="${co.activo}" data-nombre="${co.nombre}" data-codigos-activos="${codigosActivosDeLaComunidad}">${co.activo ? 'Desactivar esta comunidad' : 'Reactivar esta comunidad'}</span>
         </div>
         ${co.activo ? `
-          <div class="cc-editar" data-editor-comunidad="${co.id}" hidden>
-            <label>Nombre <input type="text" data-com-nombre="${co.id}" value="${co.nombre}" style="width:220px"></label>
-            <label>Tipo
-              <select data-com-tipo="${co.id}">
-                ${opcionesTipoComunidad(co.tipo)}
-              </select>
-            </label>
-            <span class="li-a" data-guardar-comunidad="${co.id}">Guardar</span>
+          <div data-editor-comunidad="${co.id}" hidden>
+            <div class="cc-editar">
+              <label>Nombre <input type="text" data-com-nombre="${co.id}" value="${co.nombre}" style="width:220px"></label>
+              <label>Tipo
+                <select data-com-tipo="${co.id}">
+                  ${opcionesTipoComunidad(co.tipo)}
+                </select>
+              </label>
+              <span class="li-a" data-guardar-comunidad="${co.id}">Guardar</span>
+            </div>
+            <label>Ubicación de referencia — click en el mapa para marcar o mover el punto</label>
+            <div class="mapa-mini" data-mapa-comunidad="${co.id}"></div>
+            <p class="mapa-mini-ayuda" data-ubicacion-texto="${co.id}">${co.lat != null ? `Punto actual: ${co.lat.toFixed(4)}, ${co.lon.toFixed(4)}` : 'Sin marcar — no aparece en el Mapa de incidencias.'}</p>
+            <input type="hidden" data-ubic-lat="${co.id}" value="${co.lat ?? ''}">
+            <input type="hidden" data-ubic-lon="${co.id}" value="${co.lon ?? ''}">
+            ${co.lat != null ? `<span class="li-a" data-quitar-ubicacion="${co.id}">Quitar ubicación</span>` : ''}
           </div>` : ''}
         <div class="codigos-lista">${codigos}</div>
       </div>`;
@@ -281,7 +333,28 @@ function pintarComunidades(comunidades) {
   // notó comparando con una maqueta mucho más despejada, 2026-10-20.
   document.querySelectorAll('[data-mostrar-editar-comunidad]').forEach((el) => {
     el.addEventListener('click', () => {
-      document.querySelector(`[data-editor-comunidad="${el.dataset.mostrarEditarComunidad}"]`).hidden = false;
+      const id = el.dataset.mostrarEditarComunidad;
+      document.querySelector(`[data-editor-comunidad="${id}"]`).hidden = false;
+      const co = comunidades.find((c) => String(c.id) === id);
+      activarMapaUbicacion(document.querySelector(`[data-mapa-comunidad="${id}"]`), {
+        latInicial: co?.lat ?? null,
+        lonInicial: co?.lon ?? null,
+        onCambio: (lat, lon) => {
+          document.querySelector(`[data-ubic-lat="${id}"]`).value = lat;
+          document.querySelector(`[data-ubic-lon="${id}"]`).value = lon;
+          document.querySelector(`[data-ubicacion-texto="${id}"]`).textContent = `Punto marcado: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+        },
+      });
+    });
+  });
+  document.querySelectorAll('[data-quitar-ubicacion]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.quitarUbicacion;
+      document.querySelector(`[data-ubic-lat="${id}"]`).value = 'quitar';
+      document.querySelector(`[data-ubic-lon="${id}"]`).value = 'quitar';
+      document.querySelector(`[data-ubicacion-texto="${id}"]`).textContent = 'Se quitará al guardar — sin marcar no aparece en el Mapa de incidencias.';
+      document.querySelector(`[data-mapa-comunidad="${id}"]`)._controlUbicacion?.quitarMarcador();
+      el.remove();
     });
   });
   document.querySelectorAll('[data-mostrar-vigencia]').forEach((el) => {
@@ -357,8 +430,18 @@ function pintarComunidades(comunidades) {
       const id = el.dataset.guardarComunidad;
       const nombre = document.querySelector(`[data-com-nombre="${id}"]`).value.trim();
       const tipo = document.querySelector(`[data-com-tipo="${id}"]`).value.trim();
+      // El punto de ubicación solo viaja si de verdad se tocó: "quitar"
+      // (clic en "Quitar ubicación") manda {lat:null,lon:null} para
+      // borrarlo; un valor numérico lo fija o lo mueve; vacío (nunca se
+      // tocó el mapa) no manda ni lat ni lon, para no pisar en blanco
+      // un punto que ya tenía la comunidad.
+      const ubicLat = document.querySelector(`[data-ubic-lat="${id}"]`).value;
+      const ubicLon = document.querySelector(`[data-ubic-lon="${id}"]`).value;
+      let cambiosUbicacion = {};
+      if (ubicLat === 'quitar') cambiosUbicacion = { lat: null, lon: null };
+      else if (ubicLat !== '' && ubicLon !== '') cambiosUbicacion = { lat: Number(ubicLat), lon: Number(ubicLon) };
       el.textContent = 'Guardando…';
-      const r = await actualizarComunidad(id, { nombre, tipo });
+      const r = await actualizarComunidad(id, { nombre, tipo, ...cambiosUbicacion });
       if (r.ok) await cargarComunidades();
       else { el.textContent = 'Guardar'; alert('No se pudo guardar: ' + r.error); }
     });
@@ -435,16 +518,31 @@ function enlazarFormularios() {
   });
 
   const formC = document.getElementById('cfg-form-comunidad');
-  document.getElementById('cfg-mostrar-form-comunidad').addEventListener('click', () => { formC.style.display = 'block'; });
+  document.getElementById('cfg-mostrar-form-comunidad').addEventListener('click', () => {
+    formC.style.display = 'block';
+    // Recién visible: ahora sí tiene tamaño real para que Leaflet lo mida.
+    activarMapaUbicacion(document.getElementById('cfg-c-mapa'), {
+      latInicial: null,
+      lonInicial: null,
+      onCambio: (lat, lon) => {
+        document.getElementById('cfg-c-lat').value = lat;
+        document.getElementById('cfg-c-lon').value = lon;
+        document.getElementById('cfg-c-ubicacion-texto').textContent = `Punto marcado: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      },
+    });
+  });
   document.getElementById('cfg-c-cancelar').addEventListener('click', () => { formC.style.display = 'none'; formC.reset(); });
   formC.addEventListener('submit', async (e) => {
     e.preventDefault();
     const error = document.getElementById('cfg-c-error');
     error.style.display = 'none';
+    const lat = document.getElementById('cfg-c-lat').value;
+    const lon = document.getElementById('cfg-c-lon').value;
     const r = await crearComunidad({
       nombre: document.getElementById('cfg-c-nombre').value.trim(),
       tipo: document.getElementById('cfg-c-tipo').value,
       canton_id: document.getElementById('cfg-c-canton').value,
+      ...(lat && lon ? { lat: Number(lat), lon: Number(lon) } : {}),
     });
     if (!r.ok) {
       error.textContent = r.error;
@@ -453,6 +551,8 @@ function enlazarFormularios() {
     }
     formC.style.display = 'none';
     formC.reset();
+    document.getElementById('cfg-c-ubicacion-texto').textContent = 'Sin marcar — la comunidad no va a aparecer en el Mapa de incidencias hasta que tenga un punto.';
+    document.getElementById('cfg-c-mapa')._controlUbicacion?.quitarMarcador();
     await cargarComunidades();
   });
 
