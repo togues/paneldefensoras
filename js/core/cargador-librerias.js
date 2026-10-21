@@ -66,3 +66,10 @@ export function cargarLeafletConClusters() {
     cargarScript('https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js'),
   ]));
 }
+
+// pdf-lib — arma el informe de seguimiento en el navegador
+// (core/pdf-informe.js). ~520 KB: se baja solo cuando alguien genera un
+// informe, nunca al abrir el panel.
+export function cargarPdfLib() {
+  return cargarScript('https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js');
+}

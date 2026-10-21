@@ -28,10 +28,10 @@ const PERIODOS = [
   ['anio', 'Este año'],
   ['rango', 'Elegir fechas'],
 ];
-const VACIO = { periodo: '180', desde: '', hasta: '', departamento_id: '', comunidad_id: '', familia: '', tipo_vulneracion_id: '', estado: '' };
+const VACIO = { periodo: '180', desde: '', hasta: '', departamento_id: '', comunidad_id: '', familia: '', tipo_vulneracion_id: '', estado: '', organizacion_seguimiento_id: '' };
 
 let estado = { ...VACIO };
-let opciones = { departamentos: [], comunidades: [], tipos: [] };
+let opciones = { departamentos: [], comunidades: [], tipos: [], organizaciones: [] };
 let alCambiar = () => {};
 let alEmpezar = () => {};
 let temporizador = null;
@@ -61,11 +61,22 @@ export function parametros() {
     desde = sumarDias(hoy, -(Number(estado.periodo) - 1));
   }
   const p = { desde, hasta };
-  for (const campo of ['departamento_id', 'comunidad_id', 'familia', 'tipo_vulneracion_id', 'estado']) {
+  for (const campo of ['departamento_id', 'comunidad_id', 'familia', 'tipo_vulneracion_id', 'estado', 'organizacion_seguimiento_id']) {
     if (estado[campo]) p[campo] = estado[campo];
   }
   if (!p.desde) delete p.desde;
   return p;
+}
+
+/** Nombre de la organización de seguimiento ('sin_asignar' incluido). */
+export function nombreOrganizacion(id) {
+  if (id === 'sin_asignar') return 'Sin asignar';
+  return (opciones.organizaciones || []).find((o) => String(o.id) === String(id))?.nombre || '';
+}
+
+/** Textos legibles de los filtros activos (para el informe PDF). */
+export function descripcionFiltros() {
+  return chips().map(([, texto]) => texto);
 }
 
 export function nombreTipo(id) {
@@ -149,6 +160,7 @@ function chips() {
   if (estado.familia) lista.push(['familia', 'Familia: ' + (NOMBRE_FAMILIA[estado.familia] || estado.familia)]);
   if (estado.tipo_vulneracion_id) lista.push(['tipo_vulneracion_id', 'Tipo: ' + nombreTipo(estado.tipo_vulneracion_id)]);
   if (estado.estado) lista.push(['estado', 'Estado: ' + (ETIQ_ESTADO[estado.estado] || estado.estado)]);
+  if (estado.organizacion_seguimiento_id) lista.push(['organizacion_seguimiento_id', 'Seguimiento: ' + nombreOrganizacion(estado.organizacion_seguimiento_id)]);
   return lista;
 }
 
@@ -172,6 +184,7 @@ function pintarControles() {
   document.getElementById('af-familia').innerHTML = opcionesHtml(Object.entries(NOMBRE_FAMILIA).map(([id, nombre]) => ({ id, nombre })), estado.familia, 'Todas');
   document.getElementById('af-tipo').innerHTML = opcionesHtml(tipos, estado.tipo_vulneracion_id, 'Todos');
   document.getElementById('af-estado').innerHTML = opcionesHtml(Object.entries(ETIQ_ESTADO).map(([id, nombre]) => ({ id, nombre })), estado.estado, 'Todos');
+  document.getElementById('af-organizacion').innerHTML = opcionesHtml([{ id: 'sin_asignar', nombre: 'Sin asignar' }, ...(opciones.organizaciones || [])], estado.organizacion_seguimiento_id, 'Todas');
 
   const activos = chips();
   document.getElementById('af-chips').innerHTML = `<span class="tf-periodo">${esc(etiquetaPeriodo())}</span>` +
@@ -200,10 +213,14 @@ export function esqueleto() {
         <div class="campo-grupo"><label for="af-familia">Familia</label><select id="af-familia" class="campo-filtro"></select></div>
         <div class="campo-grupo"><label for="af-tipo">Tipo de hecho</label><select id="af-tipo" class="campo-filtro"></select></div>
         <div class="campo-grupo"><label for="af-estado">Estado</label><select id="af-estado" class="campo-filtro"></select></div>
+        <div class="campo-grupo"><label for="af-organizacion">Seguimiento</label><select id="af-organizacion" class="campo-filtro"></select></div>
       </div>
       <div class="tf-pie">
         <div class="tf-chips" id="af-chips" aria-live="polite"></div>
-        <button type="button" class="btn chico" id="af-ver-casos">Ver estos casos</button>
+        <div class="acciones">
+          <button type="button" class="btn ghost chico" id="af-informe" hidden>Informe PDF</button>
+          <button type="button" class="btn chico" id="af-ver-casos">Ver estos casos</button>
+        </div>
       </div>
       <div class="tf-progreso" aria-hidden="true"></div>
     </div>`;
@@ -213,7 +230,7 @@ export function esqueleto() {
  * Enlaza la barra (ya en el DOM). `alVerCasos` recibe los parámetros
  * actuales — la vista decide cómo llevar eso a Casos.
  */
-export function montarBarra({ opciones: o, alCambiar: cb, alEmpezar: empezar = () => {}, alVerCasos }) {
+export function montarBarra({ opciones: o, alCambiar: cb, alEmpezar: empezar = () => {}, alVerCasos, alInforme }) {
   clearTimeout(temporizador);
   opciones = o;
   alCambiar = cb;
@@ -239,7 +256,7 @@ export function montarBarra({ opciones: o, alCambiar: cb, alEmpezar: empezar = (
       avisar();
     });
   }
-  const selects = { 'af-departamento': 'departamento_id', 'af-comunidad': 'comunidad_id', 'af-familia': 'familia', 'af-tipo': 'tipo_vulneracion_id', 'af-estado': 'estado' };
+  const selects = { 'af-departamento': 'departamento_id', 'af-comunidad': 'comunidad_id', 'af-familia': 'familia', 'af-tipo': 'tipo_vulneracion_id', 'af-estado': 'estado', 'af-organizacion': 'organizacion_seguimiento_id' };
   for (const [id, campo] of Object.entries(selects)) {
     document.getElementById(id).addEventListener('change', (e) => {
       estado[campo] = e.target.value;
@@ -260,5 +277,10 @@ export function montarBarra({ opciones: o, alCambiar: cb, alEmpezar: empezar = (
     }
   });
   document.getElementById('af-ver-casos').addEventListener('click', () => alVerCasos(parametros()));
+  if (alInforme) {
+    const boton = document.getElementById('af-informe');
+    boton.hidden = false;
+    boton.addEventListener('click', () => alInforme(parametros()));
+  }
   return parametros();
 }

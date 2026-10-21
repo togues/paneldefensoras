@@ -21,7 +21,7 @@
    firmarlo", respetando los filtros que estén puestos en ese momento,
    no solo la página visible. Ver exportarCsv()/exportarPdf() más abajo.
    ===================================================================== */
-import { obtenerCasos, obtenerCaso, obtenerCatalogos, actualizarCaso, publicarCaso, obtenerEvidenciaUrl, eliminarEvidencia } from '../data/api-client.js';
+import { obtenerCasos, obtenerCaso, obtenerCatalogos, actualizarCaso, publicarCaso, obtenerEvidenciaUrl, eliminarEvidencia, asignarSeguimientoEnLote } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
 import { cargarLeaflet } from '../core/cargador-librerias.js';
@@ -68,6 +68,20 @@ let overlayEnlazado = false;
 // muestran como chips que se pueden quitar (filtrosExtra), para que la
 // tabla muestre exactamente lo que contó el gráfico de origen.
 let filtrosPendientes = null;
+let totalActual = 0;
+let organizacionesCache = null;
+let catalogoPromesa = null;
+
+// Un solo pedido a /catalogos por sesión, compartido por comunidades,
+// departamentos y organizaciones.
+function catalogo() {
+  catalogoPromesa ||= obtenerCatalogos().then((r) => (r.ok ? r.data : {}));
+  return catalogoPromesa;
+}
+
+function esAdmin() {
+  return sesion.usuarioActual()?.rol === 'administrador';
+}
 let filtrosExtra = {};
 let etiquetasExtra = {};
 
@@ -93,6 +107,7 @@ function esqueleto() {
     <div class="head">
       <div><h1>Casos registrados ${botonAyuda('casos-filtros', 'Ayuda con filtros')}</h1><p id="c-resumen"></p></div>
       <div class="acciones">
+        <button class="btn ghost chico" id="c-abrir-asignar" hidden>Asignar seguimiento</button>
         <button class="btn ghost chico" id="c-exportar-csv">Exportar CSV</button>
         <button class="btn chico" id="c-exportar-pdf">Descargar informe PDF</button>
         <span style="align-self:center">${botonAyuda('casos-exportar', 'Ayuda para exportar')}</span>
@@ -121,6 +136,10 @@ function esqueleto() {
             <option value="baja">Baja</option>
           </select>
         </div>
+        <div class="campo-grupo" style="min-width:170px">
+          <label for="c-seguimiento">Seguimiento</label>
+          <select id="c-seguimiento" class="campo-filtro"><option value="">Todos</option><option value="sin_asignar">Sin asignar</option></select>
+        </div>
         <div class="campo-grupo" style="min-width:150px">
           <label for="c-desde">Desde</label>
           <input type="date" id="c-desde" class="campo-filtro">
@@ -140,6 +159,15 @@ function esqueleto() {
         <div class="filtro" data-e="anomalo">Anómalos</div>
       </div>
       <div class="chips-filtro" id="c-extra" hidden></div>
+      <div class="asignar-lote" id="c-asignar" hidden>
+        <div class="campo-grupo">
+          <label for="c-asignar-org">Asignar el seguimiento de los casos de este filtro a</label>
+          <select id="c-asignar-org" class="campo-filtro"><option value="">— elija una organización —</option><option value="quitar">Quitar la asignación</option></select>
+        </div>
+        <button type="button" class="btn chico" id="c-asignar-confirmar" disabled>Asignar</button>
+        <button type="button" class="btn ghost chico" id="c-asignar-cancelar">Cancelar</button>
+        <p class="sub2" id="c-asignar-aviso"></p>
+      </div>
       <table><thead><tr><th>Folio</th><th>Comunidad</th><th>Departamento</th><th>Tipo de hecho</th><th>Familia</th><th>Recibido</th><th>Prioridad</th><th>Estado</th></tr></thead>
       <tbody id="c-tabla"></tbody></table>
     </div>
@@ -156,7 +184,7 @@ function filaCaso(c) {
       <td><span class="fam"><i style="background:${COLOR_FAMILIA[c.familia] || '#6F7976'}"></i>${NOMBRE_FAMILIA[c.familia] || c.familia}</span></td>
       <td class="sub2">${formatoFecha(c.fecha_registro)}</td>
       <td class="sub2">${c.prioridad}</td>
-      <td><span class="pill ${CLASE_ESTADO[c.estado] || 'p-i'}">${ETIQ_ESTADO[c.estado] || c.estado}</span>${anomaloChip}</td>
+      <td><span class="pill ${CLASE_ESTADO[c.estado] || 'p-i'}">${ETIQ_ESTADO[c.estado] || c.estado}</span>${anomaloChip}${c.organizacion_seguimiento ? `<div class="sub2">→ ${c.organizacion_seguimiento}</div>` : ''}</td>
     </tr>`;
 }
 
@@ -173,6 +201,8 @@ function leerFiltrosSinPaginar() {
   if (departamento) filtros.departamento_id = departamento;
   const prioridad = document.getElementById('c-prioridad')?.value;
   if (prioridad) filtros.prioridad = prioridad;
+  const seguimiento = document.getElementById('c-seguimiento')?.value;
+  if (seguimiento) filtros.organizacion_seguimiento_id = seguimiento;
   const desde = document.getElementById('c-desde')?.value;
   if (desde) filtros.desde = desde;
   const hasta = document.getElementById('c-hasta')?.value;
@@ -203,6 +233,12 @@ function etiquetasFiltrosActivos() {
     etiquetas.push('Departamento: ' + (nombre || filtros.departamento_id));
   }
   if (filtros.prioridad) etiquetas.push('Prioridad: ' + filtros.prioridad);
+  if (filtros.organizacion_seguimiento_id) {
+    const nombre = filtros.organizacion_seguimiento_id === 'sin_asignar'
+      ? 'Sin asignar'
+      : organizacionesCache?.find((o) => String(o.id) === String(filtros.organizacion_seguimiento_id))?.nombre;
+    etiquetas.push('Seguimiento: ' + (nombre || filtros.organizacion_seguimiento_id));
+  }
   for (const clave of Object.keys(filtrosExtra)) etiquetas.push(etiquetasExtra[clave] || clave);
   if (filtros.desde) etiquetas.push('Desde: ' + filtros.desde);
   if (filtros.hasta) etiquetas.push('Hasta: ' + filtros.hasta.slice(0, 10));
@@ -239,6 +275,8 @@ async function cargarTabla() {
   }
 
   const { total, casos } = r.data;
+  totalActual = total;
+  actualizarAvisoAsignar();
   document.getElementById('c-resumen').textContent = `${total} reporte${total === 1 ? '' : 's'}`;
   document.getElementById('c-tabla').innerHTML = casos.length
     ? casos.map(filaCaso).join('')
@@ -271,6 +309,55 @@ function irAPagina1YCargar() {
   cargarTabla();
 }
 
+// ---- Asignación del seguimiento en lote (solo administrador) ----
+// Toma EXACTAMENTE los casos del filtro en pantalla (incluida la
+// búsqueda por texto y los chips de familia/tipo), y le dice al
+// servidor cuántos eran: si entre tanto cambiaron, no asigna nada.
+
+function actualizarAvisoAsignar() {
+  const aviso = document.getElementById('c-asignar-aviso');
+  if (!aviso) return;
+  const org = document.getElementById('c-asignar-org').value;
+  document.getElementById('c-asignar-confirmar').disabled = !org || totalActual === 0;
+  aviso.textContent = totalActual === 0
+    ? 'El filtro actual no tiene casos.'
+    : `Se aplicará a los ${totalActual} caso${totalActual === 1 ? '' : 's'} del filtro actual (${etiquetasFiltrosActivos()}). Cada uno queda anotado en su bitácora.`;
+}
+
+function enlazarAsignarLote() {
+  const abrir = document.getElementById('c-abrir-asignar');
+  const panel = document.getElementById('c-asignar');
+  abrir.hidden = !esAdmin();
+  abrir.addEventListener('click', () => { panel.hidden = !panel.hidden; actualizarAvisoAsignar(); });
+  document.getElementById('c-asignar-cancelar').addEventListener('click', () => { panel.hidden = true; });
+  document.getElementById('c-asignar-org').addEventListener('change', actualizarAvisoAsignar);
+  document.getElementById('c-asignar-confirmar').addEventListener('click', async (e) => {
+    const boton = e.currentTarget;
+    const valor = document.getElementById('c-asignar-org').value;
+    const quitar = valor === 'quitar';
+    const nombre = quitar ? null : organizacionesCache.find((o) => String(o.id) === valor)?.nombre;
+    const pregunta = quitar
+      ? `¿Quitar la organización de seguimiento a los ${totalActual} casos de este filtro?`
+      : `¿Asignar el seguimiento de los ${totalActual} casos de este filtro a ${nombre}?`;
+    if (!confirm(pregunta)) return;
+    boton.disabled = true;
+    boton.textContent = 'Asignando…';
+    const r = await asignarSeguimientoEnLote(leerFiltrosSinPaginar(), quitar ? null : Number(valor), totalActual);
+    boton.textContent = 'Asignar';
+    const aviso = document.getElementById('c-asignar-aviso');
+    if (!r.ok) {
+      aviso.textContent = r.error;
+      if (r.code === 'CASOS_CAMBIARON') await cargarTabla();
+      boton.disabled = false;
+      return;
+    }
+    panel.hidden = true;
+    document.getElementById('c-asignar-org').value = '';
+    await cargarTabla();
+    document.getElementById('c-resumen').textContent += ` · ${r.data.cambiados} asignado${r.data.cambiados === 1 ? '' : 's'}`;
+  });
+}
+
 function pintarChipsExtra() {
   const cont = document.getElementById('c-extra');
   const claves = Object.keys(filtrosExtra);
@@ -294,7 +381,7 @@ function aplicarFiltrosPendientes() {
       filtroEstado = f.marcado_anomalo ? 'anomalo' : f.estado;
       document.querySelectorAll('.filtro[data-e]').forEach((el) => el.classList.toggle('act', el.dataset.e === filtroEstado));
     }
-    const campos = { comunidad_id: 'c-comunidad', departamento_id: 'c-departamento', prioridad: 'c-prioridad', desde: 'c-desde', hasta: 'c-hasta' };
+    const campos = { comunidad_id: 'c-comunidad', departamento_id: 'c-departamento', prioridad: 'c-prioridad', organizacion_seguimiento_id: 'c-seguimiento', desde: 'c-desde', hasta: 'c-hasta' };
     for (const [clave, idCampo] of Object.entries(campos)) {
       if (f[clave]) document.getElementById(idCampo).value = String(f[clave]).slice(0, 10);
     }
@@ -320,7 +407,7 @@ function enlazarBarraFiltros() {
     clearTimeout(temporizadorBusqueda);
     temporizadorBusqueda = setTimeout(irAPagina1YCargar, 350);
   });
-  ['c-comunidad', 'c-departamento', 'c-prioridad', 'c-desde', 'c-hasta'].forEach((idCampo) => {
+  ['c-comunidad', 'c-departamento', 'c-prioridad', 'c-seguimiento', 'c-desde', 'c-hasta'].forEach((idCampo) => {
     document.getElementById(idCampo).addEventListener('change', irAPagina1YCargar);
   });
   document.getElementById('c-limpiar').addEventListener('click', () => {
@@ -328,6 +415,7 @@ function enlazarBarraFiltros() {
     document.getElementById('c-comunidad').value = '';
     document.getElementById('c-departamento').value = '';
     document.getElementById('c-prioridad').value = '';
+    document.getElementById('c-seguimiento').value = '';
     document.getElementById('c-desde').value = '';
     document.getElementById('c-hasta').value = '';
     document.querySelectorAll('.filtro[data-e]').forEach((f) => f.classList.remove('act'));
@@ -354,10 +442,8 @@ async function cargarComunidades() {
   // por sesión), no si ya se llenó el select — si no, la segunda visita
   // a Casos deja el filtro de comunidad solo con "Todas".
   if (!comunidadesCache) {
-    const r = await obtenerCatalogos();
-    comunidadesCache = r.ok
-      ? (r.data.comunidades || []).slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-      : []; // sin bloquear el resto de la vista si /catalogos falla
+    const datos = await catalogo(); // sin bloquear el resto de la vista si /catalogos falla
+    comunidadesCache = (datos.comunidades || []).slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
   const select = document.getElementById('c-comunidad');
   select.insertAdjacentHTML('beforeend', comunidadesCache.map((c) => `<option value="${c.id}">${c.nombre}</option>`).join(''));
@@ -368,13 +454,30 @@ async function cargarComunidades() {
 // bd/migraciones/009). Mismo catálogo de 14 que ya usa la app.
 async function cargarDepartamentos() {
   if (!departamentosCache) {
-    const r = await obtenerCatalogos();
-    departamentosCache = r.ok
-      ? (r.data.departamentos || []).slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-      : [];
+    const datos = await catalogo();
+    departamentosCache = (datos.departamentos || []).slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
   const select = document.getElementById('c-departamento');
   select.insertAdjacentHTML('beforeend', departamentosCache.map((d) => `<option value="${d.id}">${d.nombre}</option>`).join(''));
+}
+
+// Organización responsable del seguimiento (migración 011) — una
+// decisión de REDNA sobre el caso, NUNCA la estructura de quien
+// reporta (regla 2; ver docs/decision-07-informe-seguimiento.md). Usa
+// el mismo catálogo de organizaciones.
+async function asegurarOrganizaciones() {
+  if (!organizacionesCache) {
+    const datos = await catalogo();
+    organizacionesCache = (datos.estructuras || []).map((e) => ({ id: e.id, nombre: e.nombre }));
+  }
+  return organizacionesCache;
+}
+
+async function cargarOrganizaciones() {
+  await asegurarOrganizaciones();
+  const opciones = organizacionesCache.map((o) => `<option value="${o.id}">${o.nombre}</option>`).join('');
+  document.getElementById('c-seguimiento').insertAdjacentHTML('beforeend', opciones);
+  document.getElementById('c-asignar-org')?.insertAdjacentHTML('beforeend', opciones);
 }
 
 async function abrirDetalle(id) {
@@ -385,7 +488,7 @@ async function abrirDetalle(id) {
   detalle.innerHTML = '<p class="cargando">Cargando el caso…</p>';
   overlay.classList.add('on');
 
-  const r = await obtenerCaso(id);
+  const [r] = await Promise.all([obtenerCaso(id), asegurarOrganizaciones()]);
   if (!r.ok) {
     detalle.innerHTML = `<p class="error-carga">No se pudo cargar el caso: ${r.error} (${r.code})</p>`;
     return;
@@ -462,6 +565,13 @@ async function abrirDetalle(id) {
               ${Object.entries(ETIQ_ESTADO).map(([v, t]) => `<option value="${v}" ${v === c.estado ? 'selected' : ''}>${t}</option>`).join('')}
             </select>
           </div>
+          <div class="sel" style="cursor:default">
+            <span>Seguimiento a cargo de</span>
+            <select id="c-org-seguimiento" class="campo-filtro" style="border:none;padding:0;font-weight:700" aria-label="Organización responsable del seguimiento">
+              <option value="">Sin asignar</option>
+              ${organizacionesCache.map((o) => `<option value="${o.id}" ${String(o.id) === String(c.organizacion_seguimiento_id) ? 'selected' : ''}>${o.nombre}</option>`).join('')}
+            </select>
+          </div>
           <textarea class="campo" id="c-nota" placeholder="Anote lo actuado… (obligatorio para descartar)"></textarea>
           <div id="c-gestion-error" style="display:none" class="error-carga"></div>
           <button class="btn" style="width:100%" id="c-guardar">Guardar cambios</button>
@@ -499,9 +609,11 @@ async function abrirDetalle(id) {
     const cambios = {};
     if (estadoNuevo !== c.estado) cambios.estado = estadoNuevo;
     if (nota) cambios.nota = nota;
+    const orgNueva = document.getElementById('c-org-seguimiento').value;
+    if (orgNueva !== String(c.organizacion_seguimiento_id ?? '')) cambios.organizacion_seguimiento_id = orgNueva ? Number(orgNueva) : null;
 
     if (Object.keys(cambios).length === 0) {
-      error.textContent = 'No hay nada que guardar: cambie el estado o escriba una nota.';
+      error.textContent = 'No hay nada que guardar: cambie el estado, la organización de seguimiento o escriba una nota.';
       error.style.display = 'block';
       return;
     }
@@ -518,7 +630,7 @@ async function abrirDetalle(id) {
       return;
     }
 
-    await abrirDetalle(id); // re-pinta con la bitácora y el estado ya actualizados
+    await refrescarDetalleSiSigueAbierto(id); // re-pinta con la bitácora y el estado ya actualizados
     alCambiarDetalle(); // refleja el cambio de fondo sin cerrar el detalle
   });
 
@@ -546,9 +658,18 @@ async function abrirDetalle(id) {
       return;
     }
 
-    await abrirDetalle(id);
+    await refrescarDetalleSiSigueAbierto(id);
     alCambiarDetalle();
   });
+}
+
+// Re-pinta la ficha tras guardar/publicar SOLO si sigue abierta y es
+// el mismo caso: si alguien la cerró mientras se guardaba, no se le
+// vuelve a abrir encima (encontrado con probar-informe-pdf.mjs).
+function refrescarDetalleSiSigueAbierto(id) {
+  const abierta = document.getElementById('overlay').classList.contains('on');
+  if (abierta && document.getElementById('detalle').dataset.casoId === String(id)) return abrirDetalle(id);
+  return null;
 }
 
 function cerrarDetalle() {
@@ -843,8 +964,10 @@ export async function montar(raiz) {
   enlazarBarraFiltros();
   enlazarExportar();
   enlazarOverlayUnaVez();
+  enlazarAsignarLote();
   await cargarComunidades();
   await cargarDepartamentos();
+  await cargarOrganizaciones();
   aplicarFiltrosPendientes();
   await cargarTabla();
 }

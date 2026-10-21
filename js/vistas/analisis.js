@@ -23,6 +23,7 @@ import { boton as botonAyuda } from '../core/ayuda-contextual.js';
 import { cargarChartJs } from '../core/cargador-librerias.js';
 import { esVistaActiva, irAVista } from '../main.js';
 import { prefiltrarCasos } from './casos.js';
+import { abrirInforme } from './informe-seguimiento.js';
 import * as filtros from './analisis-filtros.js';
 import {
   NOMBRE_FAMILIA, COLOR_FAMILIA, ETIQ_ESTADO, COLOR_ESTADO,
@@ -58,7 +59,10 @@ function esqueleto() {
       </div>
       <div class="grid2">
         <div class="caja"><h2>Tipos de hecho</h2><p class="sub">Toque uno para filtrar.</p><div class="barras" id="a-tipos"></div></div>
-        <div class="caja"><h2>Estado de los casos</h2><p class="sub">Toque uno para filtrar.</p><div class="barras" id="a-estados"></div></div>
+        <div>
+          <div class="caja"><h2>Estado de los casos</h2><p class="sub">Toque uno para filtrar.</p><div class="barras" id="a-estados"></div></div>
+          <div class="caja"><h2>Seguimiento a cargo de</h2><p class="sub">Organización a la que REDNA le asignó cada caso. Toque una para filtrar.</p><div class="barras" id="a-organizaciones"></div></div>
+        </div>
       </div>
       <div class="grid2">
         <div class="caja"><h2>Por departamento</h2><p class="sub">Dónde ocurrió el hecho. Toque uno para filtrar.</p><div class="barras" id="a-departamentos"></div></div>
@@ -194,6 +198,12 @@ function pintarDesgloses(d) {
     activa: filtros.estaActivo('estado', e.estado),
   })), { alElegir: (c) => filtros.alternar('estado', c) });
 
+  pintarBarras(document.getElementById('a-organizaciones'), d.organizaciones.map((x) => ({
+    clave: x.organizacion_id, etiqueta: x.organizacion, valor: x.total,
+    color: x.organizacion_id === 'sin_asignar' ? '#6F7976' : undefined,
+    activa: filtros.estaActivo('organizacion_seguimiento_id', x.organizacion_id),
+  })), { alElegir: (c) => filtros.alternar('organizacion_seguimiento_id', c) });
+
   pintarBarras(document.getElementById('a-departamentos'), d.departamentos.map((x) => ({
     clave: x.departamento_id, etiqueta: x.departamento, valor: x.total,
     activa: filtros.estaActivo('departamento_id', x.departamento_id),
@@ -318,7 +328,7 @@ export async function montar(raiz) {
     const r = await obtenerAnalisis({ solo_opciones: 1 });
     if (!esVistaActiva('analisis')) return;
     if (r.ok) opciones = r.data.opciones;
-    else opciones = { departamentos: [], comunidades: [], tipos: [] };
+    else opciones = { departamentos: [], comunidades: [], tipos: [], organizaciones: [] };
   }
 
   const iniciales = filtros.montarBarra({
@@ -329,6 +339,10 @@ export async function montar(raiz) {
       prefiltrarCasos({ ...p, etiquetaTipo: filtros.nombreTipo(p.tipo_vulneracion_id) });
       irAVista('casos');
     },
+    // Solo administrador: es un documento que sale del panel.
+    alInforme: sesion.usuarioActual()?.rol === 'administrador'
+      ? (p) => abrirInforme({ parametros: p, filtrosTexto: filtros.descripcionFiltros(), opciones })
+      : null,
   });
   await Promise.all([cargar(iniciales), cargarParticipacion()]);
 }

@@ -471,3 +471,25 @@ button.barra.activa .bl span:first-child{font-weight:700}
   .tablero-filtros.cargando .tf-progreso,.kpi-cargando{animation:none}
   .tablero,button.kpi{transition:none}
 }
+
+/* Asignación de seguimiento en lote (Casos) y modal del informe PDF */
+.asignar-lote{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;background:var(--surface-1);
+  border-radius:var(--r-s);padding:12px 14px;margin:-4px 0 14px}
+.asignar-lote[hidden]{display:none}
+.asignar-lote .sub2{flex-basis:100%;margin:0}
+.modal{position:fixed;inset:0;z-index:90;background:rgba(10,25,22,.45);display:flex;align-items:flex-start;
+  justify-content:center;padding:32px 16px;overflow-y:auto;animation:fade .2s}
+.modal[hidden]{display:none}
+.modal-caja{background:var(--surface);border-radius:var(--r-m);box-shadow:var(--e3);padding:24px;width:100%;max-width:760px}
+.inf-fila{display:flex;gap:12px;margin-bottom:10px}
+.inf-kpis{grid-template-columns:repeat(4,minmax(0,1fr));margin:12px 0}
+.interruptor-fila{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;background:var(--surface-1);
+  border-radius:var(--r-s);padding:10px 12px;margin-bottom:12px;cursor:pointer}
+.interruptor-fila input{margin-top:3px;accent-color:var(--primary)}
+.inf-lista{max-height:320px;overflow-y:auto;border-radius:var(--r-s);background:var(--surface-1);padding:4px 12px;margin-bottom:12px}
+.inf-caso{padding:10px 0;border-bottom:1px solid var(--surface-2);font-size:13px}
+.inf-caso:last-child{border-bottom:0}
+.inf-caso .pill{margin-left:6px}
+.inf-actuado{margin-top:4px;padding-left:10px;font-size:12px;color:var(--on-surface-var)}
+.inf-lista.sin-actuado .inf-actuado{display:none}
+@media (max-width:640px){.inf-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}

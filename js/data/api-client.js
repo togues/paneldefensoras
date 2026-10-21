@@ -80,6 +80,24 @@ export function actualizarCaso(id, cambios) {
   return pedir('/admin/casos/' + encodeURIComponent(id), { method: 'PATCH', body: cambios });
 }
 
+// Asigna la organización responsable del seguimiento a TODOS los casos
+// del filtro (solo administrador). `esperados`: cuántos mostraba la
+// pantalla — si el filtro ya no da ese número, el servidor no asigna
+// nada (409 CASOS_CAMBIARON).
+export function asignarSeguimientoEnLote(filtros, organizacionId, esperados) {
+  return pedir('/admin/casos-asignar', { method: 'POST', body: { filtros, organizacion_seguimiento_id: organizacionId, esperados } });
+}
+
+// Lista de casos del informe de seguimiento en PDF (solo
+// administrador). Nunca trae relato, lugar, fotos ni coordenadas.
+export function obtenerInforme(filtros = {}) {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(filtros)) {
+    if (v !== '' && v !== null && v !== undefined) params.set(k, v);
+  }
+  return pedir('/admin/informe?' + params.toString());
+}
+
 export function publicarCaso(id, resumenPublico) {
   return pedir('/admin/casos/' + encodeURIComponent(id) + '/publicar', { method: 'POST', body: { resumen_publico: resumenPublico } });
 }

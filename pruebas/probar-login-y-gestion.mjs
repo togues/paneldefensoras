@@ -63,12 +63,14 @@ await paso('descartar_sin_nota_muestra_error_del_servidor', async () => {
 });
 
 await paso('descartar_con_nota_funciona_y_queda_en_bitacora', async () => {
+  const antes = await p.locator('.bit').count();
   await p.fill('#c-nota', 'Trae fotografías de un político reconocido — no corresponde al observatorio.');
   await p.click('#c-guardar');
-  // Esperar la entrada NUEVA, no cualquier .bit: la ficha ya mostraba la
-  // bitácora anterior antes de guardar, y leerla ahí daba un falso
-  // fallo cuando el caso ya tenía historial (2026-10-20).
-  await p.waitForSelector('.bit:has-text("político reconocido")', { timeout: 8000 });
+  // Esperar a que la bitácora tenga una entrada MÁS, no cualquier .bit:
+  // la ficha ya mostraba la bitácora anterior antes de guardar, y el caso
+  // puede traer entradas con el mismo texto de corridas anteriores
+  // (falso fallo visto el 2026-10-20).
+  await p.waitForFunction((n) => document.querySelectorAll('.bit').length > n, antes, { timeout: 8000 });
   const bitacora = await p.locator('.bit').first().textContent();
   if (!bitacora.includes('Descartado')) throw new Error('la bitácora no muestra el nuevo estado: ' + bitacora);
   if (!bitacora.includes('político reconocido')) throw new Error('la bitácora no guardó la nota: ' + bitacora);
