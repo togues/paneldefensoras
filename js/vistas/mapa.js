@@ -5,14 +5,25 @@
    El mockup dibujaba un mapa decorativo (una imagen de fondo en SVG y
    puntos posicionados por porcentaje, sin coordenadas de verdad). Acá
    se cambió por Leaflet + Leaflet.markercluster (CDN, con el visto
-   bueno de Marco), con coordenadas reales de GET /admin/mapa —
-   siempre el CENTRO de la comunidad, nunca la coordenada exacta del
-   reporte (regla 5 de CLAUDE.md; ver la nota larga en
-   api/observatorio/admin/mapa.php). El agrupado (cluster) lo hace la
-   librería de verdad en vez del cálculo a mano del mockup — y de paso
-   resuelve que muchos reportes de una misma comunidad caen en el
-   mismo punto exacto: un cluster real se puede "desarmar" (spiderfy)
-   para verlos uno por uno, en vez de taparse entre sí.
+   bueno de Marco), con coordenadas reales de GET /admin/mapa.
+
+   Lo que devuelve ese endpoint depende del rol (regla 5 de CLAUDE.md,
+   decisión 06 — ver docs/decision-06-coordenadas-exactas-mapa-admin.md
+   y la nota larga en api/admin/mapa.php): para administrador, el
+   punto exacto del reporte cuando existe (`es_exacto: true`), con el
+   centro de la comunidad como respaldo; para cualquier otro rol,
+   siempre el centro de la comunidad, nunca el punto exacto — el
+   comportamiento original, sin cambios. `puedeVerExacto` (del campo
+   `puede_ver_exacto` de la respuesta) controla la leyenda y el
+   tooltip de cada punto, no decide nada de permisos: eso ya lo
+   resolvió el servidor antes de responder.
+
+   El agrupado (cluster) lo hace la librería de verdad en vez del
+   cálculo a mano del mockup — y de paso resuelve que muchos reportes
+   de una misma comunidad caen en el mismo punto (más todavía ahora
+   que varios reportes sin punto propio comparten el centro de su
+   comunidad): un cluster real se puede "desarmar" (spiderfy) para
+   verlos uno por uno, en vez de taparse entre sí.
    ===================================================================== */
 import { obtenerMapa } from '../data/api-client.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
@@ -25,6 +36,7 @@ let mapa = null;
 let capaClusters = null;
 let puntosCargados = [];
 let filtroActual = 'todos';
+let puedeVerExacto = false;
 
 function esqueleto() {
   return `
@@ -38,13 +50,30 @@ function esqueleto() {
     </div>
     <div class="caja">
       <div id="r-mapa"></div>
-      <div class="leyenda">
+      <div class="leyenda" id="m-leyenda">
         <span><i class="pt" style="background:${COLOR_ESTADO.recibido}"></i> Sin revisar</span>
         <span><i class="pt" style="background:${COLOR_ESTADO.en_investigacion}"></i> En investigación</span>
         <span><i class="pt" style="background:${COLOR_ESTADO.cerrado}"></i> Cerrado</span>
-        <span style="margin-left:auto;font-style:italic">Los puntos se ubican al centro de la comunidad, nunca en la coordenada exacta.</span>
       </div>
     </div>`;
+}
+
+// El texto y, para administrador, una segunda fila de leyenda que
+// distingue un punto exacto de un centro de comunidad — mostrar los
+// dos idénticos sería engañoso: uno es dónde ocurrió el hecho, el
+// otro es "en algún lugar de esta comunidad". Ver
+// docs/decision-06-coordenadas-exactas-mapa-admin.md.
+function actualizarLeyenda() {
+  const leyenda = document.getElementById('m-leyenda');
+  if (puedeVerExacto) {
+    leyenda.insertAdjacentHTML('beforeend', `
+      <span style="margin-left:auto;display:flex;gap:14px;align-items:center">
+        <span><i class="pt" style="background:#171D1B;border:2px solid #fff;box-shadow:0 0 0 2px #171D1B"></i> Punto exacto del reporte</span>
+        <span><i class="pt" style="background:#171D1B;opacity:.45"></i> Centro de la comunidad (sin punto marcado)</span>
+      </span>`);
+  } else {
+    leyenda.insertAdjacentHTML('beforeend', '<span style="margin-left:auto;font-style:italic">Los puntos se ubican al centro de la comunidad, nunca en la coordenada exacta.</span>');
+  }
 }
 
 function dibujarPuntos() {
@@ -52,14 +81,18 @@ function dibujarPuntos() {
   const filtrados = filtroActual === 'todos' ? puntosCargados : puntosCargados.filter((p) => p.familia === filtroActual);
 
   for (const p of filtrados) {
+    // Mismo color por estado en los dos casos — lo que cambia es el
+    // borde, para que un punto exacto se distinga de un centro de
+    // comunidad sin confundirse con el estado del caso.
     const marcador = L.circleMarker([p.lat, p.lon], {
-      radius: 8,
-      color: '#fff',
-      weight: 2,
+      radius: p.es_exacto ? 9 : 7,
+      color: p.es_exacto ? '#171D1B' : '#fff',
+      weight: p.es_exacto ? 3 : 2,
       fillColor: COLOR_ESTADO[p.estado] || '#6F7976',
-      fillOpacity: 0.9
+      fillOpacity: p.es_exacto ? 1 : 0.75
     });
-    marcador.bindTooltip(`<b>${p.comunidad}</b><br>${p.folio} · ${ETIQ_ESTADO[p.estado] || p.estado}<br>${NOMBRE_FAMILIA[p.familia] || p.familia}`);
+    const etiquetaOrigen = puedeVerExacto ? (p.es_exacto ? '<br><i>Punto exacto</i>' : '<br><i>Centro de la comunidad</i>') : '';
+    marcador.bindTooltip(`<b>${p.comunidad}</b><br>${p.folio} · ${ETIQ_ESTADO[p.estado] || p.estado}<br>${NOMBRE_FAMILIA[p.familia] || p.familia}${etiquetaOrigen}`);
     capaClusters.addLayer(marcador);
   }
 
@@ -94,7 +127,9 @@ export async function montar(raiz) {
   }
 
   puntosCargados = r.data.puntos;
+  puedeVerExacto = !!r.data.puede_ver_exacto;
   filtroActual = 'todos';
+  actualizarLeyenda();
 
   const resumen = document.getElementById('m-resumen');
   // No es "sin comunidad asignada" (eso es otra cosa, y casi nunca

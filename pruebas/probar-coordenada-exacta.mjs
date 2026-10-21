@@ -41,12 +41,20 @@ await p.fill('#login-clave', 'prueba-dev-2026');
 await p.click('#login-boton');
 await p.waitForSelector('#app-shell:not([hidden])', { timeout: 8000 });
 await p.click('.lat a[data-v="casos"]');
-await p.fill('#c-buscar', 'Contaminaron el agua del río con desechos');
+// Por el folio del fixture (único por construcción, fn_asignar_folio),
+// no por el texto del relato: "Contaminaron el agua del río con
+// desechos" se fue duplicando con corridas repetidas de otras pruebas
+// a lo largo de la sesión (10 filas con el mismo texto encontradas el
+// 2026-10-20) — buscar por ese texto y hacer clic en la primera fila
+// ya no garantiza que sea ESTE reporte (id 309), el único al que esta
+// prueba de verdad le puso geom. Sin filtrar, además, el reporte 309
+// puede quedar fuera de la primera página si hay muchos más recientes.
+await p.fill('#c-buscar', 'SV11-2026-0228');
 await p.waitForTimeout(500);
 await p.waitForSelector('#c-tabla tr[data-id]', { timeout: 8000 });
 
 await paso('caso_con_punto_muestra_el_mapa_y_un_marcador', async () => {
-  await p.click('#c-tabla tr[data-id]');
+  await p.click('#c-tabla tr[data-id="309"]');
   await p.waitForSelector('#detalle .det-head', { timeout: 8000 });
   await p.waitForSelector('#c-mapa-exacto .leaflet-marker-icon', { timeout: 8000 });
   const texto = await p.locator('#detalle').textContent();
@@ -57,7 +65,7 @@ await paso('cerrar_y_reabrir_no_rompe_el_mapa_leaflet', async () => {
   // El gotcha clásico: si no se destruye la instancia anterior,
   // Leaflet tira "Map container is already initialized" la segunda vez.
   await p.click('#c-cerrar');
-  await p.click('#c-tabla tr[data-id]');
+  await p.click('#c-tabla tr[data-id="309"]');
   await p.waitForSelector('#c-mapa-exacto .leaflet-marker-icon', { timeout: 8000 });
 });
 
