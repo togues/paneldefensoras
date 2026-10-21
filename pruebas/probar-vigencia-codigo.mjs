@@ -40,18 +40,31 @@ await paso('generar_codigo_nuevo', async () => {
   idComunidad = await botonGenerar.getAttribute('data-generar');
   await botonGenerar.click();
   await p.waitForTimeout(600);
-  const fila = p.locator(`[data-comunidad-bloque="${idComunidad}"] .lista-item`).nth(1);
+  // Ordenado por fecha_emision DESC — el código recién generado es
+  // siempre la primera fila dentro de .codigos-lista.
+  const fila = p.locator(`[data-comunidad-bloque="${idComunidad}"] .codigo-row`).first();
   idCodigo = await fila.locator('[data-revocar]').getAttribute('data-revocar');
   codigoTexto = await p.locator(`[data-comunidad-bloque="${idComunidad}"] .codigo-mono`).first().textContent();
   if (!idCodigo || !codigoTexto) throw new Error('no se generó el código de prueba');
 });
 
 await paso('fijar_ventana_ya_vencida', async () => {
-  const ayer = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  // "Ayer" calculado en UTC, no en hora de El Salvador: entre las
+  // 18:00 y la medianoche de El Salvador, Date.now() ya cayó en el
+  // día UTC siguiente, así que "Date.now() - 1 día" en UTC cae en el
+  // día de HOY en El Salvador, no en ayer — el código quedaba
+  // "vencido" hasta las 23:59:59 de hoy, que todavía no habían
+  // pasado. Encontrado corriendo esta prueba real a las 19:01 de El
+  // Salvador, 2026-10-20 — mismo tipo de bug que el de inicioDeDiaSV
+  // en config.js, por la misma razón.
+  const hoySV = new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
+  const fechaAyer = new Date(hoySV + 'T00:00:00Z');
+  fechaAyer.setUTCDate(fechaAyer.getUTCDate() - 1);
+  const ayer = fechaAyer.toISOString().slice(0, 10);
   await p.fill(`[data-vig-desde="${idCodigo}"]`, ayer);
   await p.fill(`[data-vig-hasta="${idCodigo}"]`, ayer);
   await p.click(`[data-guardar-vigencia="${idCodigo}"]`);
-  await p.waitForSelector(`[data-comunidad-bloque="${idComunidad}"] .lista-item:nth-child(2) small:has-text("Vencido")`, { timeout: 4000 });
+  await p.waitForSelector(`[data-comunidad-bloque="${idComunidad}"] .codigo-row:first-child small:has-text("Vencido")`, { timeout: 4000 });
 });
 
 await paso('la_app_rechaza_el_codigo_vencido_de_verdad', async () => {
@@ -92,10 +105,10 @@ await paso('fijar_ventana_vigente_hoy_y_confirmar_hora_exacta_en_el_servidor', a
 });
 
 await paso('extender_una_semana_mueve_la_fecha_siete_dias_en_hora_de_el_salvador', async () => {
-  const antes = await p.locator(`[data-comunidad-bloque="${idComunidad}"] .lista-item:nth-child(2) small`).textContent();
+  const antes = await p.locator(`[data-comunidad-bloque="${idComunidad}"] .codigo-row:first-child small`).textContent();
   await p.click(`[data-extender="${idCodigo}"]`);
   await p.waitForTimeout(600);
-  const despues = await p.locator(`[data-comunidad-bloque="${idComunidad}"] .lista-item:nth-child(2) small`).textContent();
+  const despues = await p.locator(`[data-comunidad-bloque="${idComunidad}"] .codigo-row:first-child small`).textContent();
   if (antes === despues) throw new Error('el texto de vigencia no cambió tras +1 semana');
   if (!despues.startsWith('Vigente del')) throw new Error('tras extender ya no se ve como un código vigente: ' + despues);
 });

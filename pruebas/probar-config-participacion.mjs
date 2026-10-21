@@ -5,6 +5,11 @@ const p = await b.newPage();
 const errores = [];
 p.on('console', (m) => { if (m.type() === 'error') errores.push(m.text()); });
 p.on('pageerror', (e) => errores.push('pageerror: ' + e.message));
+// Revocar un código (y desactivar una comunidad) ahora piden
+// confirmación — Playwright cancela un confirm() por su cuenta si
+// nadie lo atiende, así que sin esto "revocar" nunca llegaría a
+// pedírselo al servidor y la prueba fallaría en silencio.
+p.on('dialog', (d) => d.accept());
 
 const s = {};
 async function paso(nombre, fn) {

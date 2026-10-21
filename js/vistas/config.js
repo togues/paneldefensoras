@@ -17,6 +17,7 @@ import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
 
 let cantonesCache = [];
+let comunidadesCache = [];
 
 function formatoFecha(iso) {
   if (!iso) return 'nunca entró';
@@ -95,7 +96,11 @@ function opcionesTipoComunidad(valorActual) {
 }
 
 function textoVigencia(c) {
-  if (!c.activo) return 'Revocado';
+  // No repite "Revocado": la insignia de estado (estadoCodigo) ya lo
+  // dice — antes las dos cosas decían lo mismo y rompía la prueba de
+  // Playwright al buscar ese texto (match ambiguo entre la insignia y
+  // esta línea, 2026-10-20).
+  if (!c.activo) return `Emitido el ${formatoFechaCorta(c.fecha_emision)}`;
   const vencido = c.vigente_hasta && new Date(c.vigente_hasta) < new Date();
   if (vencido) return `Vencido — era hasta ${formatoFechaCorta(c.vigente_hasta)}`;
   const desde = formatoFechaCorta(c.vigente_desde);
@@ -134,10 +139,21 @@ function esqueleto() {
     </div>
 
     <div class="caja">
-      <h2>Comunidades y códigos de enrolamiento ${botonAyuda('config-comunidades')}</h2>
-      <p class="sub">El código es lo único que necesita alguien para enrolarse desde la app — se reparte en la capacitación. Revocar uno no afecta los reportes ya enviados con él.</p>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
+        <div>
+          <h2>Comunidades y códigos de enrolamiento ${botonAyuda('config-comunidades')}</h2>
+          <p class="sub">El código es lo único que necesita alguien para enrolarse desde la app — se reparte en la capacitación.
+            <b>Desactivar una comunidad</b> bloquea el enrolamiento con TODOS sus códigos, aunque sigan vigentes.
+            <b>Revocar un código</b> bloquea solo ese código — los demás de la misma comunidad siguen funcionando. Ninguna de las dos cosas afecta los reportes ya enviados.</p>
+        </div>
+        <button class="btn chico" id="cfg-mostrar-form-comunidad" style="white-space:nowrap">Nueva comunidad</button>
+      </div>
+      <div class="kpis" id="cfg-com-kpis" style="margin:14px 0"></div>
+      <div class="campo-grupo" style="margin-bottom:14px">
+        <label for="cfg-com-buscar">Buscar</label>
+        <input type="search" id="cfg-com-buscar" class="campo-filtro" placeholder="Nombre de la comunidad o código…" style="width:100%">
+      </div>
       <div id="cfg-comunidades"></div>
-      <button class="btn ghost chico" id="cfg-mostrar-form-comunidad" style="margin-top:14px">Agregar comunidad nueva</button>
       <form id="cfg-form-comunidad" style="display:none;margin-top:14px;border-top:1px solid var(--outline-var);padding-top:14px">
         <div class="barra-filtros" style="margin-bottom:10px">
           <div class="campo-grupo" style="flex:1;min-width:180px"><label>Nombre de la comunidad</label><input class="campo-filtro" id="cfg-c-nombre" required></div>
@@ -177,31 +193,65 @@ function pintarUsuarios(usuarios) {
   });
 }
 
+// Estado real de un código, no solo activo/inactivo — "vencido" (se
+// arregla extendiendo la fecha) y "revocado" (permanente, hay que
+// generar uno nuevo) son cosas distintas y se pintan distinto.
+function estadoCodigo(c) {
+  if (!c.activo) return { texto: 'Revocado', clase: 'p-n' };
+  if (c.vigente_hasta && new Date(c.vigente_hasta) < new Date()) return { texto: 'Vencido', clase: 'p-i' };
+  return { texto: 'Activo', clase: 'p-c' };
+}
+
+function pintarKpisComunidades(comunidades) {
+  const activas = comunidades.filter((co) => co.activo).length;
+  const personas = comunidades.reduce((s, co) => s + co.personas_inscritas, 0);
+  const codigosActivos = comunidades.reduce((s, co) => s + co.codigos.filter((c) => estadoCodigo(c).clase === 'p-c').length, 0);
+  const items = [
+    { valor: activas, texto: 'Comunidades activas' },
+    { valor: personas, texto: 'Personas enroladas' },
+    { valor: codigosActivos, texto: 'Códigos disponibles ahora' },
+  ];
+  document.getElementById('cfg-com-kpis').innerHTML = items.map((it) => `<div class="kpi"><b>${it.valor}</b><span>${it.texto}</span></div>`).join('');
+}
+
 function pintarComunidades(comunidades) {
   document.getElementById('cfg-comunidades').innerHTML = comunidades.map((co) => {
-    const codigos = co.codigos.map((c) => `
-      <div class="lista-item" style="padding-left:16px;flex-wrap:wrap">
-        <div class="li-t"><b class="codigo-mono">${c.codigo}</b><small>${textoVigencia(c)}</small></div>
+    const codigosActivosDeLaComunidad = co.codigos.filter((c) => c.activo).length;
+    const codigos = co.codigos.map((c) => {
+      const estado = estadoCodigo(c);
+      // Para el aviso de "quedan otros N" al revocar ESTE código — no
+      // cuenta a sí mismo.
+      const otrosActivos = codigosActivosDeLaComunidad - (c.activo ? 1 : 0);
+      return `
+      <div class="codigo-row">
+        <div class="li-t">
+          <b class="codigo-mono">${c.codigo}</b>
+          <span class="pill ${estado.clase}">${estado.texto}</span>
+          <small>${textoVigencia(c)}</small>
+        </div>
         ${c.activo ? `
           <div class="vigencia-controles">
             <label>Desde <input type="date" data-vig-desde="${c.id}" value="${fechaInputSV(c.vigente_desde)}"></label>
             <label>Hasta <input type="date" data-vig-hasta="${c.id}" value="${fechaInputSV(c.vigente_hasta)}"></label>
             <span class="li-a" data-guardar-vigencia="${c.id}">Guardar</span>
             <span class="li-a" data-extender="${c.id}">+1 semana</span>
-            <span class="li-a" data-revocar="${c.id}">Revocar</span>
+            <span class="li-a peligro" data-revocar="${c.id}" data-codigo="${c.codigo}" data-otros-activos="${otrosActivos}">Revocar solo este código</span>
           </div>` : ''}
-      </div>`).join('');
+      </div>`;
+    }).join('') || '<p class="sub2">Sin códigos todavía.</p>';
+    const tipoTexto = TEXTO_TIPO_COMUNIDAD[co.tipo] || co.tipo || 'Sin tipo';
     return `
-      <div style="margin-bottom:6px${co.activo ? '' : ';opacity:.6'}" data-comunidad-bloque="${co.id}">
-        <div class="lista-item" style="flex-wrap:wrap">
-          <div class="li-t"><b>${co.nombre}</b><small>${co.activo ? '' : 'Desactivada · '}${co.canton || '—'} · ${co.personas_inscritas} persona${co.personas_inscritas === 1 ? '' : 's'} inscrita${co.personas_inscritas === 1 ? '' : 's'}</small></div>
-          <div style="display:flex;gap:10px;align-items:center">
-            ${co.activo ? `<span class="li-a" data-generar="${co.id}">Generar código nuevo</span>` : ''}
-            <span class="li-a" data-comunidad-toggle="${co.id}" data-activo="${co.activo}">${co.activo ? 'Desactivar' : 'Reactivar'}</span>
+      <div class="comunidad-card${co.activo ? '' : ' inactiva'}" data-comunidad-bloque="${co.id}">
+        <div class="cc-head">
+          <div class="cc-id">
+            <b>${co.nombre}</b>
+            <span class="pill p-a">${tipoTexto}</span>
+            ${co.activo ? '' : '<span class="pill p-n">Desactivada</span>'}
           </div>
+          <small>${co.canton || '—'} · ${co.personas_inscritas} persona${co.personas_inscritas === 1 ? '' : 's'} inscrita${co.personas_inscritas === 1 ? '' : 's'}</small>
         </div>
         ${co.activo ? `
-          <div class="vigencia-controles" style="padding-left:16px">
+          <div class="cc-editar">
             <label>Nombre <input type="text" data-com-nombre="${co.id}" value="${co.nombre}" style="width:220px"></label>
             <label>Tipo
               <select data-com-tipo="${co.id}">
@@ -210,12 +260,22 @@ function pintarComunidades(comunidades) {
             </label>
             <span class="li-a" data-guardar-comunidad="${co.id}">Guardar</span>
           </div>` : ''}
-        ${codigos}
+        <div class="cc-acciones">
+          ${co.activo ? `<span class="li-a" data-generar="${co.id}">+ Generar código nuevo</span>` : ''}
+          <span class="li-a peligro" data-comunidad-toggle="${co.id}" data-activo="${co.activo}" data-nombre="${co.nombre}" data-codigos-activos="${codigosActivosDeLaComunidad}">${co.activo ? 'Desactivar esta comunidad' : 'Reactivar esta comunidad'}</span>
+        </div>
+        ${co.activo ? '<p class="cc-nota">Desactivar bloquea el enrolamiento con todos los códigos de esta comunidad, aunque sigan vigentes — se puede reactivar después. No afecta a quienes ya se enrolaron.</p>' : ''}
+        <div class="codigos-lista">${codigos}</div>
       </div>`;
-  }).join('') || '<p class="sub2">Sin comunidades todavía.</p>';
+  }).join('') || '<p class="sub2">Ninguna comunidad calza con la búsqueda.</p>';
 
   document.querySelectorAll('[data-revocar]').forEach((el) => {
     el.addEventListener('click', async () => {
+      const otros = Number(el.dataset.otrosActivos);
+      const nota = otros > 0
+        ? ` La comunidad tiene ${otros} código${otros === 1 ? '' : 's'} más activo${otros === 1 ? '' : 's'} que seguirá${otros === 1 ? '' : 'n'} funcionando.`
+        : ' Es el único código activo de esta comunidad: nadie más podrá enrolarse hasta generar uno nuevo.';
+      if (!confirm(`¿Revocar el código ${el.dataset.codigo}? Es permanente — no se puede reactivar, habría que generar uno nuevo. No afecta a quienes ya se enrolaron con él.${nota}`)) return;
       el.textContent = 'Revocando…';
       const r = await revocarCodigo(el.dataset.revocar);
       if (r.ok) await cargarComunidades();
@@ -257,7 +317,7 @@ function pintarComunidades(comunidades) {
       el.textContent = 'Generando…';
       const r = await generarCodigo(el.dataset.generar);
       if (r.ok) await cargarComunidades();
-      else el.textContent = 'Generar código nuevo';
+      else el.textContent = '+ Generar código nuevo';
     });
   });
   document.querySelectorAll('[data-guardar-comunidad]').forEach((el) => {
@@ -274,10 +334,19 @@ function pintarComunidades(comunidades) {
   document.querySelectorAll('[data-comunidad-toggle]').forEach((el) => {
     el.addEventListener('click', async () => {
       const activo = el.dataset.activo === 'true';
+      // Solo confirma al desactivar — reactivar no tiene efecto
+      // secundario que avisar.
+      if (activo) {
+        const n = Number(el.dataset.codigosActivos);
+        const avisoCodigos = n > 0
+          ? `Bloqueará el enrolamiento con ${n === 1 ? 'su código activo' : 'sus ' + n + ' códigos activos'}, aunque sigan vigentes.`
+          : 'No tiene códigos activos en este momento.';
+        if (!confirm(`¿Desactivar "${el.dataset.nombre}"? ${avisoCodigos} Se puede reactivar después. No afecta a quienes ya se enrolaron.`)) return;
+      }
       el.textContent = 'Guardando…';
       const r = await actualizarComunidad(el.dataset.comunidadToggle, { activo: !activo });
       if (r.ok) await cargarComunidades();
-      else el.textContent = activo ? 'Desactivar' : 'Reactivar';
+      else el.textContent = activo ? 'Desactivar esta comunidad' : 'Reactivar esta comunidad';
     });
   });
 }
@@ -287,10 +356,23 @@ async function cargarUsuarios() {
   if (r.ok) pintarUsuarios(r.data.usuarios);
 }
 
+// Las KPI siempre reflejan TODAS las comunidades — buscar filtra la
+// lista de tarjetas, no cambia lo que dicen los números de arriba.
+function comunidadesFiltradas(filtro) {
+  const q = filtro.trim().toLowerCase();
+  if (!q) return comunidadesCache;
+  return comunidadesCache.filter((co) =>
+    co.nombre.toLowerCase().includes(q)
+    || (co.canton || '').toLowerCase().includes(q)
+    || co.codigos.some((c) => c.codigo.toLowerCase().includes(q)));
+}
+
 async function cargarComunidades() {
   const r = await obtenerComunidades();
   if (!r.ok) return;
-  pintarComunidades(r.data.comunidades);
+  comunidadesCache = r.data.comunidades;
+  pintarKpisComunidades(comunidadesCache);
+  pintarComunidades(comunidadesFiltradas(document.getElementById('cfg-com-buscar')?.value || ''));
   cantonesCache = r.data.cantones_disponibles;
   const select = document.getElementById('cfg-c-canton');
   select.innerHTML = cantonesCache.map((c) => `<option value="${c.id}">${c.canton} — ${c.municipio}, ${c.departamento}</option>`).join('');
@@ -340,6 +422,13 @@ function enlazarFormularios() {
     formC.style.display = 'none';
     formC.reset();
     await cargarComunidades();
+  });
+
+  // Filtra la lista ya cargada, en el cliente — sin volver a pedirle
+  // nada al servidor, igual que cualquier otra búsqueda chica de este
+  // panel.
+  document.getElementById('cfg-com-buscar').addEventListener('input', (e) => {
+    pintarComunidades(comunidadesFiltradas(e.target.value));
   });
 }
 
