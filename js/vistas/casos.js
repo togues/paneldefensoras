@@ -535,6 +535,7 @@ async function abrirDetalle(id) {
         <p class="sub2">${c.publicado
           ? 'Este caso ya está en el muro. Puede corregir el texto: el cambio se ve en el muro al guardarlo y queda en la bitácora.'
           : 'Arranca con el relato de la persona. Corrija la ortografía, quite nombres, caseríos, teléfonos o cualquier dato que identifique a alguien, y agregue lo que haga falta. El relato original de arriba no cambia: queda como evidencia.'}</p>
+        ${c.publicado && c.descripcion ? '<button class="btn ghost chico" type="button" id="c-copiar-relato" style="margin-bottom:8px">Copiar el relato al cuadro</button>' : ''}
         <textarea class="campo campo-muro" id="c-resumen-publico" rows="8" placeholder="Texto para el muro público…">${esc(textoMuro)}</textarea>
         <div id="c-revision" class="revision-muro" aria-live="polite"></div>
         <div id="c-publicar-error" style="display:none;padding:8px 0" class="error-carga"></div>
@@ -642,7 +643,7 @@ async function abrirDetalle(id) {
     alCambiarDetalle(); // refleja el cambio de fondo sin cerrar el detalle
   });
 
-  enlazarPublicar(id, c.publicado);
+  enlazarPublicar(id, c.publicado, c.descripcion || '');
 }
 
 const NOMBRE_CATEGORIA = { politico: 'político', seguridad: 'pandillas o violencia', contacto: 'dato de contacto' };
@@ -659,7 +660,7 @@ function pintarRevision(cont, r) {
       <label class="revision-confirmar"><input type="checkbox" id="c-advertencias-ok"> Lo revisé y puede publicarse así</label></div>` : ''}`;
 }
 
-function enlazarPublicar(id, yaPublicado) {
+function enlazarPublicar(id, yaPublicado, relatoOriginal) {
   const boton = document.getElementById('c-publicar');
   if (!boton) return;
   const campo = document.getElementById('c-resumen-publico');
@@ -689,6 +690,11 @@ function enlazarPublicar(id, yaPublicado) {
   }
 
   campo.addEventListener('input', () => { revision.innerHTML = ''; });
+  document.getElementById('c-copiar-relato')?.addEventListener('click', () => {
+    campo.value = relatoOriginal;
+    revision.innerHTML = '';
+    campo.focus();
+  });
   document.getElementById('c-revisar').addEventListener('click', revisar);
 
   boton.addEventListener('click', async () => {

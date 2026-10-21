@@ -77,6 +77,14 @@ await paso('el_texto_publicado_se_puede_corregir', async () => {
   await p.waitForFunction(() => document.querySelector('#detalle')?.textContent.includes('Texto publicado editado'), null, { timeout: 6000 });
 });
 
+await paso('copiar_el_relato_trae_la_narrativa_completa_a_un_caso_publicado', async () => {
+  await p.waitForSelector('#c-copiar-relato', { timeout: 6000 });
+  await p.click('#c-copiar-relato');
+  const relato = (await p.locator('#detalle .relato').textContent()).trim().replace(/^"|"$/g, '');
+  const texto = await p.locator('#c-resumen-publico').inputValue();
+  if (texto.trim() !== relato.trim()) throw new Error('no copió el relato');
+});
+
 console.log(JSON.stringify(s, null, 2));
 const fallas = Object.entries(s).filter(([, v]) => v !== true);
 const inesperados = errores.filter((e) => !/Failed to load resource.*(404|400)/.test(e));
