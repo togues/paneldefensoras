@@ -32,13 +32,14 @@ await paso('analisis_carga_serie_dona_y_barras_reales', async () => {
   const hayDona = await p.evaluate(() => !!window.Chart?.getChart('a-dona'));
   if (!hayDona) throw new Error('la dona de Chart.js no se dibujó');
   const haySerie = await p.evaluate(() => !!window.Chart?.getChart('a-serie'));
-  if (!haySerie) throw new Error('la gráfica de línea de Chart.js no se dibujó');
+  if (!haySerie) throw new Error('la gráfica de evolución de Chart.js no se dibujó');
+  // Desde 2026-10-20 la dona solo lista familias con reportes en el
+  // período (tablero con filtros), y "territorio por cantón" pasó a
+  // departamento + comunidad, con filtro cruzado.
   const leyenda = await p.locator('#a-dona-leyenda .barra').count();
-  if (leyenda !== 4) throw new Error('esperaba 4 familias en la leyenda de la dona, hay ' + leyenda);
-  const territorios = await p.locator('#a-territorios .barra').count();
-  if (territorios === 0) throw new Error('no hay barras de territorio');
-  const territorioTexto = await p.locator('#a-territorios').textContent();
-  if (!territorioTexto.includes('dispositivo')) throw new Error('no se mostró "dispositivos activos" en territorios: ' + territorioTexto);
+  if (leyenda === 0) throw new Error('la leyenda de la dona quedó vacía');
+  const departamentos = await p.locator('#a-departamentos .barra').count();
+  if (departamentos === 0) throw new Error('no hay barras de departamento');
   const estados = await p.locator('#a-estados .barra').count();
   if (estados === 0) throw new Error('no hay barras de estado');
 });

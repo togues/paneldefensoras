@@ -66,6 +66,14 @@ async function montarVista(nombre) {
   await cargadas[nombre].montar(raiz);
 }
 
+// Para que una vista lleve a otra ya filtrada (un indicador del
+// Resumen, "ver estos casos" del tablero) — mismo camino que un clic
+// en la barra lateral.
+export function irAVista(nombre) {
+  window.scrollTo({ top: 0 });
+  return montarVista(nombre);
+}
+
 function pintarUsuarioPie() {
   const usuario = sesion.usuarioActual();
   document.getElementById('usuario-pie').innerHTML = `

@@ -35,15 +35,10 @@ await paso('kpis_muestran_numeros_reales', async () => {
   if (!/^\d+$/.test(primero.trim())) throw new Error('el primer KPI no es un número: ' + primero);
 });
 
+// Resumen operativo desde 2026-10-20: el pulso de 30 días reemplazó la
+// serie de 6 meses (que se mudó, con filtros, a Análisis).
 await paso('grafica_se_dibuja', async () => {
-  await p.waitForSelector('#r-serie', { timeout: 4000 });
-  const hayCanvas = await p.evaluate(() => {
-    const c = document.getElementById('r-serie');
-    return c && c.getContext && !!window.Chart;
-  });
-  if (!hayCanvas) throw new Error('Chart.js no cargó o el canvas no existe');
-  const leyenda = await p.locator('#r-leyenda span').count();
-  if (leyenda === 0) throw new Error('la leyenda de familias quedó vacía');
+  await p.waitForFunction(() => !!window.Chart?.getChart('r-pulso'), { timeout: 8000 });
 });
 
 await paso('tabla_casos_recientes_tiene_filas_reales', async () => {
@@ -60,10 +55,28 @@ await paso('alertas_activas_muestra_la_demo', async () => {
   if (!texto.includes('Los Naranjos')) throw new Error('no apareció la alerta de demo esperada: ' + texto);
 });
 
-await paso('tipos_frecuentes_tiene_barras', async () => {
-  await p.waitForSelector('#r-tipos .barra', { timeout: 4000 });
-  const barras = await p.locator('#r-tipos .barra').count();
-  if (barras === 0) throw new Error('no hay barras de tipos de hecho');
+await paso('bandeja_ordena_por_urgencia_y_una_fila_abre_la_ficha', async () => {
+  await p.waitForSelector('#r-pendientes tr[data-id]', { timeout: 4000 });
+  const primera = p.locator('#r-pendientes tr[data-id]').first();
+  const folio = (await primera.locator('.folio').textContent()).replace('Alta', '').trim();
+  await primera.click();
+  await p.waitForSelector('#overlay.on #detalle .det-head', { timeout: 8000 });
+  const cabecera = await p.locator('#detalle .det-head').textContent();
+  if (!cabecera.includes(folio)) throw new Error('la ficha no es del caso ' + folio);
+  await p.click('#c-cerrar');
+});
+
+await paso('el_indicador_sin_revisar_lleva_a_casos_con_el_mismo_numero', async () => {
+  const valor = (await p.locator('#r-kpis [data-kpi="0"] b').textContent()).trim();
+  await p.click('#r-kpis [data-kpi="0"]');
+  await p.waitForSelector('#c-tabla tr[data-id], #c-tabla .vacio', { timeout: 8000 });
+  await p.waitForFunction(() => /reporte/.test(document.getElementById('c-resumen')?.textContent || ''));
+  const resumen = await p.locator('#c-resumen').textContent();
+  if (!resumen.startsWith(valor + ' ')) throw new Error(`el indicador decía ${valor} y Casos muestra "${resumen}"`);
+  const activo = await p.locator('.filtro.act[data-e="recibido"]').count();
+  if (!activo) throw new Error('Casos no quedó filtrado en "Sin revisar"');
+  await p.click('.lat a[data-v="resumen"]');
+  await p.waitForSelector('#r-kpis [data-kpi]', { timeout: 8000 });
 });
 
 // 8 desde la Galería (2026-10-20) — su enlace existe siempre en el

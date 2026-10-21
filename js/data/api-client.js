@@ -91,8 +91,16 @@ export function obtenerCatalogos() {
   return pedir('/catalogos');
 }
 
-export function obtenerAnalisis() {
-  return pedir('/admin/analisis');
+// Filtros iguales a los de Casos (desde, hasta, departamento_id,
+// comunidad_id, familia, tipo_vulneracion_id, estado). `opciones: 1`
+// agrega las listas para llenar la barra de filtros.
+export function obtenerAnalisis(filtros = {}) {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(filtros)) {
+    if (v !== '' && v !== null && v !== undefined) params.set(k, v);
+  }
+  const qs = params.toString();
+  return pedir('/admin/analisis' + (qs ? '?' + qs : ''));
 }
 
 export function obtenerSalud() {

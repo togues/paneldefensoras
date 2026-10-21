@@ -61,6 +61,19 @@ let mapaDetalleExacto = null;
 // #c-tabla no existe.
 let alCambiarDetalle = () => cargarTabla();
 let overlayEnlazado = false;
+
+// Filtros que llegan de OTRA vista (tablero de Análisis, indicadores
+// del Resumen) — prefiltrarCasos() los deja acá y montar() los aplica.
+// familia y tipo de hecho no tienen control propio en esta barra: se
+// muestran como chips que se pueden quitar (filtrosExtra), para que la
+// tabla muestre exactamente lo que contó el gráfico de origen.
+let filtrosPendientes = null;
+let filtrosExtra = {};
+let etiquetasExtra = {};
+
+export function prefiltrarCasos(filtros) {
+  filtrosPendientes = { ...filtros };
+}
 function liberarMapaDetalleExacto() {
   if (mapaDetalleExacto) {
     mapaDetalleExacto.remove();
@@ -126,6 +139,7 @@ function esqueleto() {
         <div class="filtro" data-e="descartado">Descartados</div>
         <div class="filtro" data-e="anomalo">Anómalos</div>
       </div>
+      <div class="chips-filtro" id="c-extra" hidden></div>
       <table><thead><tr><th>Folio</th><th>Comunidad</th><th>Departamento</th><th>Tipo de hecho</th><th>Familia</th><th>Recibido</th><th>Prioridad</th><th>Estado</th></tr></thead>
       <tbody id="c-tabla"></tbody></table>
     </div>
@@ -147,7 +161,7 @@ function filaCaso(c) {
 }
 
 function leerFiltrosSinPaginar() {
-  const filtros = {};
+  const filtros = { ...filtrosExtra };
   if (filtroEstado === 'anomalo') filtros.marcado_anomalo = 'true';
   else if (filtroEstado !== 'todos') filtros.estado = filtroEstado;
 
@@ -189,6 +203,7 @@ function etiquetasFiltrosActivos() {
     etiquetas.push('Departamento: ' + (nombre || filtros.departamento_id));
   }
   if (filtros.prioridad) etiquetas.push('Prioridad: ' + filtros.prioridad);
+  for (const clave of Object.keys(filtrosExtra)) etiquetas.push(etiquetasExtra[clave] || clave);
   if (filtros.desde) etiquetas.push('Desde: ' + filtros.desde);
   if (filtros.hasta) etiquetas.push('Hasta: ' + filtros.hasta.slice(0, 10));
   return etiquetas.length ? etiquetas.join(' · ') : 'Sin filtros — todos los casos';
@@ -256,6 +271,39 @@ function irAPagina1YCargar() {
   cargarTabla();
 }
 
+function pintarChipsExtra() {
+  const cont = document.getElementById('c-extra');
+  const claves = Object.keys(filtrosExtra);
+  cont.hidden = claves.length === 0;
+  cont.innerHTML = claves.map((c) => `
+    <span class="chip-filtro">${etiquetasExtra[c] || c}
+      <button type="button" data-quitar-extra="${c}" aria-label="Quitar este filtro">×</button></span>`).join('');
+}
+
+/**
+ * Aplica lo que dejó prefiltrarCasos() desde otra vista. Comunidad y
+ * departamento tienen que aplicarse DESPUÉS de llenar sus <select>.
+ */
+function aplicarFiltrosPendientes() {
+  filtrosExtra = {};
+  etiquetasExtra = {};
+  const f = filtrosPendientes;
+  filtrosPendientes = null;
+  if (f) {
+    if (f.estado || f.marcado_anomalo) {
+      filtroEstado = f.marcado_anomalo ? 'anomalo' : f.estado;
+      document.querySelectorAll('.filtro[data-e]').forEach((el) => el.classList.toggle('act', el.dataset.e === filtroEstado));
+    }
+    const campos = { comunidad_id: 'c-comunidad', departamento_id: 'c-departamento', prioridad: 'c-prioridad', desde: 'c-desde', hasta: 'c-hasta' };
+    for (const [clave, idCampo] of Object.entries(campos)) {
+      if (f[clave]) document.getElementById(idCampo).value = String(f[clave]).slice(0, 10);
+    }
+    if (f.familia) { filtrosExtra.familia = f.familia; etiquetasExtra.familia = 'Familia: ' + (NOMBRE_FAMILIA[f.familia] || f.familia); }
+    if (f.tipo_vulneracion_id) { filtrosExtra.tipo_vulneracion_id = f.tipo_vulneracion_id; etiquetasExtra.tipo_vulneracion_id = 'Tipo: ' + (f.etiquetaTipo || f.tipo_vulneracion_id); }
+  }
+  pintarChipsExtra();
+}
+
 function enlazarFiltrosEstado() {
   document.querySelectorAll('.filtro[data-e]').forEach((el) => {
     el.addEventListener('click', () => {
@@ -285,6 +333,17 @@ function enlazarBarraFiltros() {
     document.querySelectorAll('.filtro[data-e]').forEach((f) => f.classList.remove('act'));
     document.querySelector('.filtro[data-e="todos"]').classList.add('act');
     filtroEstado = 'todos';
+    filtrosExtra = {};
+    etiquetasExtra = {};
+    pintarChipsExtra();
+    irAPagina1YCargar();
+  });
+  document.getElementById('c-extra').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-quitar-extra]');
+    if (!b) return;
+    delete filtrosExtra[b.dataset.quitarExtra];
+    delete etiquetasExtra[b.dataset.quitarExtra];
+    pintarChipsExtra();
     irAPagina1YCargar();
   });
 }
@@ -786,5 +845,6 @@ export async function montar(raiz) {
   enlazarOverlayUnaVez();
   await cargarComunidades();
   await cargarDepartamentos();
+  aplicarFiltrosPendientes();
   await cargarTabla();
 }

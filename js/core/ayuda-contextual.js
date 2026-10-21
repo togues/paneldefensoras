@@ -27,12 +27,13 @@ const CONTENIDOS = {
   resumen: {
     overline: 'Ayuda · Resumen',
     titulo: '¿Qué estoy viendo acá?',
-    texto: 'Un vistazo rápido del estado del observatorio: cuántos casos esperan revisión, cómo viene el mes, y qué necesita atención ya (alertas activas, casos recientes). Para trabajar un caso en concreto, use Casos.'
+    texto: 'Lo que necesita atención hoy: casos sin revisar, los que llevan más de una semana esperando, la prioridad alta pendiente y las alertas abiertas. Toque un indicador para ir a Casos ya filtrado, o una fila de la bandeja para trabajar ese caso. Para análisis con filtros (fechas, territorio, tipo de hecho), use Análisis.',
+    lista: ['La bandeja ordena primero la prioridad alta, después lo que más lleva esperando.', 'Una espera de más de 7 días se marca en rojo.']
   },
   mapa: {
     overline: 'Ayuda · Mapa',
     titulo: '¿Por qué varios puntos caen en el mismo lugar?',
-    texto: 'Cada punto se ubica en el centro de la comunidad, nunca en el lugar exacto del hecho — es a propósito: en un caserío pequeño, una coordenada exacta puede señalar una vivienda. Por eso varios reportes de la misma comunidad se agrupan (racimo); tóquelo para desarmarlo y ver uno por uno.',
+    texto: 'En general, cada punto se ubica en el centro de la comunidad, no en el lugar exacto del hecho — en un caserío pequeño, una coordenada exacta puede señalar una vivienda. Solo el rol administrador ve además el punto exacto cuando la persona lo marcó (borde oscuro); el resto sigue viendo el centro de la comunidad. Varios reportes en el mismo lugar se agrupan (racimo): tóquelo para desarmarlo y verlos uno por uno.',
     lista: ['Filtre por familia con los chips de arriba del mapa.', 'La rueda del mouse hace zoom directo, sin pasar por los controles.']
   },
   galeria: {
@@ -60,8 +61,9 @@ const CONTENIDOS = {
   },
   analisis: {
     overline: 'Ayuda · Análisis',
-    titulo: '¿Qué tan definitivos son estos indicadores?',
-    texto: 'Son indicadores de uso que la plataforma genera por sí sola (cuántos reportes, de qué tipo, en qué territorio). Los indicadores sociales del observatorio todavía no están definidos con REDNA — cuando se definan, se agregan acá.'
+    titulo: '¿Cómo uso los filtros del tablero?',
+    texto: 'Cada filtro de arriba refresca todo el tablero de una vez. También puede filtrar tocando un gráfico: una barra de departamento, una porción de la dona, un tipo de hecho, un estado — y tocar lo mismo otra vez lo quita. "Ver estos casos" abre Casos con exactamente los mismos filtros.',
+    lista: ['Al elegir un departamento, la lista de comunidades se reduce a las de ese departamento; lo mismo pasa con familia y tipo de hecho.', 'El total se compara con un período de la misma duración, justo antes del elegido.', 'Los tiempos de atención son medianas: un caso olvidado no distorsiona el número de todos los demás.', 'Participación (abajo) no responde a los filtros, a propósito: achicar el universo podría identificar a alguien.']
   },
   salud: {
     overline: 'Ayuda · Salud de datos',
