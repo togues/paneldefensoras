@@ -83,7 +83,7 @@ const ETAPAS = [
     titulo: '5. Sale en el muro público',
     pasos: [
       'Se ve el tipo de hecho, la categoría, el cantón o el departamento, el mes y el año, y el texto revisado.',
-      'Se puede leer completo, compartir y bajar en ficha PDF.',
+      'Se puede leer completo y bajar en ficha PDF. No hay botones para compartir en redes sociales.',
       'El texto se puede corregir después desde el panel; queda en la bitácora.',
     ],
     nunca: 'Nunca sale: el alias, el folio, la comunidad, el punto exacto, las fotos, el relato original ni nada de quién reportó.',
