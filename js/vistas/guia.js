@@ -81,7 +81,7 @@ const CAPITULOS = [
     intro: 'Cada reporte que llega es un caso que REDNA revisa y acompaña.',
     reglas: [
       'Estados: Recibido, En investigación, Cerrado y Descartado. Se puede pasar de uno a otro en cualquier orden. Para descartar hay que escribir el motivo.',
-      'La prioridad la fija el sistema al recibir el caso: alta si el tipo de hecho es de aviso inmediato y media en los demás. Hoy no se cambia desde el panel.',
+      'La prioridad la fija el sistema al recibir el caso: alta si el tipo de hecho está marcado como grave y media en los demás. Hoy no se cambia desde el panel.',
       'Lo que contó la persona nunca se edita, ni desde el panel ni por otra vía. Así conserva su valor como prueba.',
       'Toda interpretación va en la bitácora del caso: cada cambio de estado y cada nota queda con quién la hizo y cuándo.',
       'Algunas notas las pone el sistema solo, por ejemplo al eliminar una foto, al publicar o al asignar el seguimiento. Esas no salen en el informe PDF.',
@@ -111,14 +111,24 @@ const CAPITULOS = [
     ],
   },
   {
-    id: 'alertas',
-    titulo: 'Alertas',
-    intro: 'Una alerta avisa cuando se juntan varios reportes en poco tiempo en un mismo cantón.',
+    id: 'seguimiento',
+    titulo: 'Seguimiento: no hay avisos automáticos',
+    intro: 'El seguimiento de los casos es manual: lo decide y lo hace el equipo de REDNA.',
     reglas: [
-      'Cada regla dice cuántos reportes, en cuántas horas y, si se quiere, de qué familia de hechos. Por ejemplo: 3 reportes contra personas en 24 horas.',
-      'Si siguen llegando reportes, se suman a la alerta abierta: no se repite el aviso.',
-      'Solo cuentan los reportes que tienen cantón, es decir, los que tienen punto en el mapa. Los que solo tienen departamento todavía no entran en las alertas.',
-      'Las reglas las configura el equipo técnico.',
+      'El sistema no avisa solo a nadie. Ningún reporte dispara un mensaje a la red ni a otras organizaciones.',
+      'Un hecho grave llega marcado como prioridad alta, para revisarlo primero. Eso es lo que la app le dice a la persona.',
+      'REDNA revisa cada caso, decide a qué organización le toca el seguimiento y, si corresponde, le entrega en mano el informe PDF con sus casos.',
+    ],
+  },
+  {
+    id: 'anomalias',
+    titulo: 'Anomalías para revisar',
+    intro: 'En Salud de datos, el sistema revisa los datos y señala lo que conviene mirar. No cambia nada: una persona decide.',
+    reglas: [
+      'Datos inconsistentes: reportes sin departamento, fecha del hecho posterior al día en que llegó el reporte, posibles duplicados (mismo tipo y departamento, fechas a menos de 2 días y relato parecido), relato vacío o de menos de 20 caracteres, y punto en el mapa fuera de El Salvador.',
+      'Uso sospechoso: más de 5 reportes de un mismo teléfono en 24 horas, cuentas recuperadas 3 veces o más, y textos marcados por el filtro de contenido. Las dos primeras las ve solo el administrador, y nunca dicen quién envió nada.',
+      'Casos sin atender: en Recibido hace más de 7 días, en investigación sin ninguna nota en 15 días, y casos abiertos sin organización de seguimiento.',
+      'Cada tarjeta muestra cuántos casos encontró. Al tocarla aparece la lista, y cada caso se abre en su ficha.',
     ],
   },
   {

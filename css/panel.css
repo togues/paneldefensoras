@@ -517,3 +517,25 @@ button.barra.activa .bl span:first-child{font-weight:700}
 .guia-cap .sub{max-width:75ch;font-size:13.5px}
 .guia-reglas{margin:0 0 0 20px;display:flex;flex-direction:column;gap:9px;max-width:75ch}
 .guia-reglas li{font-size:13.5px;line-height:1.6;color:var(--on-surface)}
+
+/* Salud de datos → Anomalías para revisar (vistas/salud-calidad.js).
+   Tarjetas por grupo: ámbar si hay algo que mirar, verde si no. La
+   lista de casos se abre debajo del grupo de la tarjeta tocada. */
+.cal-grupo{margin-top:14px}
+.cal-grupo-titulo{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--on-surface-var);text-transform:uppercase;letter-spacing:.04em}
+.cal-tarjetas{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.cal-tarjeta{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:14px;border-radius:var(--r-m);border:1px solid var(--outline-var);background:var(--surface);font:inherit;color:inherit;cursor:pointer}
+.cal-tarjeta:disabled{cursor:default}
+.cal-tarjeta b{font-size:26px;line-height:1.1}
+.cal-titulo{font-weight:700;font-size:13px}
+.cal-texto{font-size:11.5px;color:var(--on-surface-var);line-height:1.45}
+.cal-accion{margin-top:6px;font-size:12px;font-weight:700;color:var(--primary)}
+.cal-hay{background:var(--warn-c);border-color:#E8D4B0}.cal-hay b{color:var(--warn)}
+.cal-ok b{color:var(--ok)}.cal-ok .cal-accion{color:var(--ok)}
+.cal-abierta{outline:3px solid var(--primary-c);outline-offset:1px}
+.cal-tarjeta:focus-visible{outline:3px solid var(--primary-c);outline-offset:2px}
+.cal-lista{margin-top:12px;padding:14px;background:var(--surface-1);border-radius:var(--r-s)}
+.cal-lista h3{font-size:13px;margin-bottom:8px}
+.cal-tabla{overflow-x:auto}
+.cal-tabla tbody tr{cursor:pointer}
+.cal-tabla tbody tr:hover{background:var(--surface)}

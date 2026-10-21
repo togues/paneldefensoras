@@ -17,6 +17,7 @@
 import { obtenerSalud, marcarAnomaliaRevisada } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
+import { esqueletoCalidad, cargarCalidad } from './salud-calidad.js';
 
 const ETIQ_TIPO_ANOMALIA = {
   caracteres_invalidos: 'Caracteres inválidos',
@@ -46,14 +47,15 @@ function esqueleto() {
   return `
     <div class="head"><div><h1>Salud de la plataforma y de los datos ${botonAyuda('salud')}</h1><p id="s-resumen"></p></div></div>
     <div class="kpis" id="s-kpis"></div>
+    ${esqueletoCalidad()}
     <div class="grid2">
       <div class="caja">
-        <h2>Estado de la plataforma</h2><p class="sub">Lo que se puede medir hoy — el resto (disponibilidad, cola de sincronización, respaldos) se agrega cuando exista la pieza que lo produce.</p>
+        <h2>Estado de la plataforma</h2><p class="sub">Lo que se puede medir hoy desde el servidor.</p>
         <div id="s-plataforma"></div>
       </div>
       <div class="caja">
-        <h2>Datos que necesitan revisión</h2>
-        <p class="sub">El sistema marca automáticamente. La decisión de depurar es humana y queda en bitácora.</p>
+        <h2>Marcas automáticas al recibir</h2>
+        <p class="sub">Lo que el sistema marcó al llegar cada reporte (caracteres raros, filtro de contenido). Una persona las revisa y las da por vistas.</p>
         <div id="s-anomalias"></div>
       </div>
     </div>`;
@@ -62,8 +64,6 @@ function esqueleto() {
 function pintarKpis(d) {
   document.getElementById('s-kpis').innerHTML = `
     <div class="kpi ${d.datos.anomalias_sin_revisar > 0 ? 'rojo' : ''}"><b>${d.datos.anomalias_sin_revisar}</b><span>Anomalías sin revisar</span></div>
-    <div class="kpi ${d.datos.reportes_sin_territorio > 0 ? 'ambar' : ''}"><b>${d.datos.reportes_sin_territorio}</b><span>Reportes sin territorio</span></div>
-    <div class="kpi ${d.datos.dispositivos_con_recuperaciones_altas > 0 ? 'ambar' : ''}"><b>${d.datos.dispositivos_con_recuperaciones_altas}</b><span>Dispositivos con recuperaciones altas</span></div>
     <div class="kpi"><b style="font-size:20px">${formatoRelativo(d.servicio.ultima_sync)}</b><span>Última sincronización recibida</span></div>`;
 }
 
@@ -74,18 +74,6 @@ function pintarPlataforma(d) {
       t: 'Base de datos',
       small: 'Si esta pantalla cargó, es que conecta',
       v: d.servicio.estado === 'ok' ? 'OK' : d.servicio.estado
-    },
-    {
-      sem: d.datos.reportes_sin_territorio > 0 ? 's-am' : 's-ok',
-      t: 'Reportes sin territorio',
-      small: 'Quedaron con cantón sin resolver — invisibles para los umbrales de alerta',
-      v: `${d.datos.reportes_sin_territorio}`
-    },
-    {
-      sem: d.datos.dispositivos_con_recuperaciones_altas > 0 ? 's-am' : 's-ok',
-      t: 'Dispositivos con recuperaciones altas',
-      small: '3 o más recuperaciones de cuenta — puede ser normal (perdió el teléfono) o merecer una mirada',
-      v: `${d.datos.dispositivos_con_recuperaciones_altas}`
     },
     {
       sem: d.respaldo.ultimo ? 's-ok' : 's-am',
@@ -149,4 +137,5 @@ export async function montar(raiz) {
   pintarKpis(r.data);
   pintarPlataforma(r.data);
   pintarAnomalias(r.data.anomalias_sin_revisar_detalle);
+  await cargarCalidad();
 }

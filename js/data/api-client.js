@@ -125,6 +125,11 @@ export function obtenerSalud() {
   return pedir('/admin/salud');
 }
 
+// Tablero de anomalías de Salud de datos (once revisiones).
+export function obtenerCalidadDatos() {
+  return pedir('/admin/calidad-datos');
+}
+
 export function marcarAnomaliaRevisada(id) {
   return pedir('/admin/anomalias/' + encodeURIComponent(id), { method: 'PATCH' });
 }
