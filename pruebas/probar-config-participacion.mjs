@@ -71,7 +71,9 @@ await paso('config_desactivar_la_cuenta_recien_creada', async () => {
 // con todas a la vez y revienta en modo estricto de Playwright.
 const NOMBRE_COMUNIDAD_PRUEBA = 'Comunidad E2E de Prueba ' + Date.now();
 
-await paso('config_crea_comunidad_y_genera_codigo', async () => {
+// Desde la migración 012 una comunidad nueva NO genera código: el
+// código de registro es aparte (probar-codigos-registro.mjs).
+await paso('config_crea_comunidad_sin_codigo', async () => {
   await p.click('#cfg-mostrar-form-comunidad');
   await p.waitForFunction(() => document.getElementById('cfg-c-canton')?.options.length > 0, { timeout: 4000 });
   await p.fill('#cfg-c-nombre', NOMBRE_COMUNIDAD_PRUEBA);
@@ -84,16 +86,11 @@ await paso('config_crea_comunidad_y_genera_codigo', async () => {
   // toda la suite de app/). Esto fue justo lo que revocó ZAP001 por error.
   const idComunidad = await p.locator('[data-comunidad-bloque]', { hasText: NOMBRE_COMUNIDAD_PRUEBA }).getAttribute('data-comunidad-bloque');
   const bloque = p.locator(`[data-comunidad-bloque="${idComunidad}"]`);
-  const codigos = await bloque.locator('.codigo-mono').count();
-  if (codigos === 0) throw new Error('no se generó ningún código para la comunidad nueva');
-});
-
-await paso('config_revocar_codigo_lo_marca_como_revocado', async () => {
-  const idComunidad = await p.locator('[data-comunidad-bloque]', { hasText: NOMBRE_COMUNIDAD_PRUEBA }).getAttribute('data-comunidad-bloque');
-  const bloque = p.locator(`[data-comunidad-bloque="${idComunidad}"]`);
-  await bloque.locator('[data-revocar]').first().click();
-  await p.waitForSelector(`text=${NOMBRE_COMUNIDAD_PRUEBA}`, { timeout: 8000 });
-  await bloque.locator('text=Revocado').waitFor({ timeout: 4000 });
+  if (await bloque.locator('.codigo-mono').count()) throw new Error('la comunidad nueva trae un código');
+  // Limpieza: desactivarla, igual que probar-ubicacion-comunidad.
+  await bloque.locator('[data-mostrar-editar-comunidad]').click();
+  await bloque.locator('[data-comunidad-toggle]').click();
+  await p.waitForSelector(`[data-comunidad-bloque="${idComunidad}"] .pill:has-text("Desactivada")`, { timeout: 8000 });
 });
 
 console.log(JSON.stringify(s, null, 2));

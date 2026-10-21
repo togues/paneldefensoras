@@ -157,8 +157,14 @@ export function actualizarComunidad(id, cambios) {
   return pedir('/admin/comunidades/' + encodeURIComponent(id), { method: 'PATCH', body: cambios });
 }
 
-export function generarCodigo(comunidadId) {
-  return pedir('/admin/comunidades/' + encodeURIComponent(comunidadId) + '/codigos', { method: 'POST' });
+// Códigos de registro (migración 012): sueltos, sin comunidad.
+export function obtenerCodigos() {
+  return pedir('/admin/codigos');
+}
+
+/** @param {{codigo?: string, vigente_desde: ?string, vigente_hasta: ?string}} datos — sin `codigo`, el servidor genera uno */
+export function crearCodigo(datos) {
+  return pedir('/admin/codigos', { method: 'POST', body: datos });
 }
 
 export function revocarCodigo(id) {

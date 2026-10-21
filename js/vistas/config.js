@@ -1,22 +1,24 @@
 /* =====================================================================
-   Vista Configuración — la primera sección real, "Personal del panel"
-   y "Comunidades y códigos". No estaba en diseno/tablero_completo.html
-   tal cual (esa maqueta solo tenía "Códigos de comunidad", sin gestión
-   de cuentas del panel) — apareció al preguntarle Marco a REDNA cómo
-   se registra su propio personal: la respuesta era "a mano, por SQL",
-   un vacío real tanto del contrato como de la maqueta. Ver la nota
-   larga en api/observatorio/admin/usuarios.php y
-   api/observatorio/admin/comunidades.php.
+   Vista Configuración — tres bloques independientes, en orden de uso:
+     1. Códigos de registro (vistas/config-codigos.js): lo que se toca
+        antes de cada capacitación o gira.
+     2. Comunidades: el catálogo de lugares que la persona elige en
+        "¿Dónde fue?" al reportar, con su punto para el Mapa del panel.
+        Desde la migración 012 NO tienen códigos: el código no dice de
+        qué comunidad es nadie (docs/decision-08-codigo-de-registro.md).
+     3. Personal del panel.
 
    Todo esto es rol administrador únicamente — ver
    lib/PanelAuth.php::obRequireRolAdministrador(). Un operador ve un
    aviso, no la pantalla vacía ni rota.
    ===================================================================== */
-import { obtenerUsuarios, crearUsuario, actualizarUsuario, obtenerComunidades, crearComunidad, actualizarComunidad, generarCodigo, revocarCodigo, actualizarVigenciaCodigo } from '../data/api-client.js';
+import { obtenerUsuarios, crearUsuario, actualizarUsuario, obtenerComunidades, crearComunidad, actualizarComunidad } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
 import { cargarLeaflet } from '../core/cargador-librerias.js';
 import { esVistaActiva } from '../main.js';
+import { esc } from '../core/graficas.js';
+import { esqueletoCodigos, enlazarCodigos, cargarCodigos } from './config-codigos.js';
 
 let cantonesCache = [];
 let comunidadesCache = [];
@@ -24,55 +26,6 @@ let comunidadesCache = [];
 function formatoFecha(iso) {
   if (!iso) return 'nunca entró';
   return new Date(iso).toLocaleDateString('es-SV', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-// Para el día en una fecha de vigencia — distinto de formatoFecha():
-// acá "sin fecha" significa "sin tope de ese lado", no "nunca entró".
-// timeZone explícito: el día calendario que importa es el de El
-// Salvador, no el del dispositivo de quien esté mirando el panel en
-// ese momento (podría estar de viaje, o el reloj del equipo mal
-// puesto).
-function formatoFechaCorta(iso) {
-  return iso ? new Date(iso).toLocaleDateString('es-SV', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/El_Salvador' }) : null;
-}
-
-// Aritmética en UTC a propósito: sumar días sobre un Date construido
-// desde un <input type="date"> en hora local puede saltarse un día
-// entero cerca de la medianoche según el huso horario del navegador.
-function sumarDias(fechaYMD, dias) {
-  const d = new Date(fechaYMD + 'T00:00:00Z');
-  d.setUTCDate(d.getUTCDate() + dias);
-  return d.toISOString().slice(0, 10);
-}
-
-// "-06:00" fijo, no una zona con nombre: El Salvador no tiene horario
-// de verano, así que el offset no cambia nunca — y así Postgres lo
-// guarda bien sin importar el timezone de SU sesión (Etc/UTC acá), que
-// nunca se tocó porque config.php solo fija la hora de PHP
-// (date_default_timezone_set), no la de la conexión PDO. Sin el
-// offset explícito, "20T23:59:59" se guardaba como 23:59:59 UTC —
-// 17:59:59 en El Salvador, el código vencía casi 6 horas antes de lo
-// que se veía en el selector. Encontrado probándolo de punta a punta
-// contra la app real, 2026-10-20.
-function inicioDeDiaSV(fechaYMD) {
-  return fechaYMD + 'T00:00:00-06:00';
-}
-function finDeDiaSV(fechaYMD) {
-  return fechaYMD + 'T23:59:59-06:00';
-}
-
-// El mismo problema pero al revés: un vigente_hasta guardado como
-// "23:59:59 de El Salvador" viaja de vuelta del servidor como
-// "05:59:59 del día siguiente" en UTC — cortar los primeros 10
-// caracteres de ESE string para rellenar el <input type="date"> daba
-// el día de más, y de ahí salía mal cualquier cálculo que partiera de
-// ese valor (como +1 semana). "en-CA" formatea como AAAA-MM-DD, que es
-// justo lo que un <input type="date"> espera.
-function fechaInputSV(iso) {
-  return iso ? new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' }) : '';
-}
-function hoySV() {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
 }
 
 // Mismas 4 opciones que el formulario "Agregar comunidad nueva" —
@@ -142,25 +95,49 @@ async function activarMapaUbicacion(contenedor, { latInicial, lonInicial, onCamb
   return contenedor._controlUbicacion;
 }
 
-function textoVigencia(c) {
-  // No repite "Revocado": la insignia de estado (estadoCodigo) ya lo
-  // dice — antes las dos cosas decían lo mismo y rompía la prueba de
-  // Playwright al buscar ese texto (match ambiguo entre la insignia y
-  // esta línea, 2026-10-20).
-  if (!c.activo) return `Emitido el ${formatoFechaCorta(c.fecha_emision)}`;
-  const vencido = c.vigente_hasta && new Date(c.vigente_hasta) < new Date();
-  if (vencido) return `Vencido — era hasta ${formatoFechaCorta(c.vigente_hasta)}`;
-  const desde = formatoFechaCorta(c.vigente_desde);
-  const hasta = formatoFechaCorta(c.vigente_hasta);
-  if (!desde && !hasta) return 'Activo — sin fecha de vencimiento';
-  if (desde && hasta) return `Vigente del ${desde} al ${hasta}`;
-  if (hasta) return `Vigente hasta ${hasta}`;
-  return `Vigente desde ${desde}`;
-}
+const AYUDA_PUNTO = 'El punto ubica la comunidad en el Mapa del panel. No se muestra en la app ni en el muro. Sin punto, sus reportes no aparecen en el mapa.';
 
 function esqueleto() {
   return `
-    <div class="head"><div><h1>Configuración</h1><p>Personal del panel y comunidades habilitadas para reportar</p></div></div>
+    <div class="head"><div><h1>Configuración</h1><p>Códigos de registro, comunidades y personal del panel</p></div></div>
+
+    ${esqueletoCodigos()}
+
+    <div class="caja">
+      <div class="caja-cabecera">
+        <div>
+          <h2>Comunidades ${botonAyuda('config-comunidades')}</h2>
+          <p class="sub">Los lugares que la persona elige en "¿Dónde fue?" al hacer un reporte.</p>
+        </div>
+        <button class="btn chico" id="cfg-mostrar-form-comunidad">Agregar comunidad</button>
+      </div>
+      <form id="cfg-form-comunidad" class="com-form" hidden>
+        <div class="barra-filtros">
+          <div class="campo-grupo" style="flex:1;min-width:180px"><label for="cfg-c-nombre">Nombre de la comunidad</label><input class="campo-filtro" id="cfg-c-nombre" required></div>
+          <div class="campo-grupo" style="min-width:150px"><label for="cfg-c-tipo">Tipo</label>
+            <select class="campo-filtro" id="cfg-c-tipo">
+              ${Object.entries(TEXTO_TIPO_COMUNIDAD).map(([v, texto]) => `<option value="${v}">${texto}</option>`).join('')}
+            </select>
+          </div>
+          <div class="campo-grupo" style="flex:1;min-width:220px"><label for="cfg-c-canton">Cantón</label><select class="campo-filtro" id="cfg-c-canton"></select></div>
+        </div>
+        <label class="com-etiqueta">Punto en el mapa (opcional): toque el mapa para marcar el centro aproximado</label>
+        <div class="mapa-mini" id="cfg-c-mapa"></div>
+        <p class="mapa-mini-ayuda" id="cfg-c-ubicacion-texto">${AYUDA_PUNTO}</p>
+        <input type="hidden" id="cfg-c-lat">
+        <input type="hidden" id="cfg-c-lon">
+        <div id="cfg-c-error" hidden class="cod-error"></div>
+        <div class="com-botones">
+          <button class="btn chico" type="submit">Guardar comunidad</button>
+          <button class="btn ghost chico" type="button" id="cfg-c-cancelar">Cancelar</button>
+        </div>
+      </form>
+      <div class="campo-grupo com-buscar">
+        <label for="cfg-com-buscar">Buscar</label>
+        <input type="search" id="cfg-com-buscar" class="campo-filtro" placeholder="Nombre de la comunidad o cantón…">
+      </div>
+      <div id="cfg-comunidades"><p class="cargando">Cargando…</p></div>
+    </div>
 
     <div class="caja">
       <h2>Personal del panel ${botonAyuda('config-usuarios')}</h2>
@@ -182,43 +159,6 @@ function esqueleto() {
         <div id="cfg-u-error" style="display:none" class="error-carga"></div>
         <button class="btn chico" type="submit">Crear cuenta</button>
         <button class="btn ghost chico" type="button" id="cfg-u-cancelar">Cancelar</button>
-      </form>
-    </div>
-
-    <div class="caja">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
-        <div>
-          <h2>Comunidades y códigos de enrolamiento ${botonAyuda('config-comunidades')}</h2>
-          <p class="sub">El código es lo único que necesita alguien para enrolarse desde la app — se reparte en la capacitación.
-            <b>Desactivar una comunidad</b> bloquea el enrolamiento con TODOS sus códigos, aunque sigan vigentes.
-            <b>Revocar un código</b> bloquea solo ese código — los demás de la misma comunidad siguen funcionando. Ninguna de las dos cosas afecta los reportes ya enviados.</p>
-        </div>
-        <button class="btn chico" id="cfg-mostrar-form-comunidad" style="white-space:nowrap">Nueva comunidad</button>
-      </div>
-      <div class="kpis" id="cfg-com-kpis" style="margin:14px 0"></div>
-      <div class="campo-grupo" style="margin-bottom:14px">
-        <label for="cfg-com-buscar">Buscar</label>
-        <input type="search" id="cfg-com-buscar" class="campo-filtro" placeholder="Nombre de la comunidad o código…" style="width:100%">
-      </div>
-      <div id="cfg-comunidades"></div>
-      <form id="cfg-form-comunidad" style="display:none;margin-top:14px;border-top:1px solid var(--outline-var);padding-top:14px">
-        <div class="barra-filtros" style="margin-bottom:10px">
-          <div class="campo-grupo" style="flex:1;min-width:180px"><label>Nombre de la comunidad</label><input class="campo-filtro" id="cfg-c-nombre" required></div>
-          <div class="campo-grupo" style="min-width:150px"><label>Tipo</label>
-            <select class="campo-filtro" id="cfg-c-tipo">
-              ${Object.entries(TEXTO_TIPO_COMUNIDAD).map(([v, texto]) => `<option value="${v}">${texto}</option>`).join('')}
-            </select>
-          </div>
-          <div class="campo-grupo" style="flex:1;min-width:220px"><label>Cantón</label><select class="campo-filtro" id="cfg-c-canton"></select></div>
-        </div>
-        <label>Ubicación de referencia (opcional) — click en el mapa para marcar el centro aproximado de la comunidad</label>
-        <div class="mapa-mini" id="cfg-c-mapa"></div>
-        <p class="mapa-mini-ayuda" id="cfg-c-ubicacion-texto">Sin marcar — la comunidad no va a aparecer en el Mapa de incidencias hasta que tenga un punto.</p>
-        <input type="hidden" id="cfg-c-lat">
-        <input type="hidden" id="cfg-c-lon">
-        <div id="cfg-c-error" style="display:none" class="error-carga"></div>
-        <button class="btn chico" type="submit">Crear comunidad y generar código</button>
-        <button class="btn ghost chico" type="button" id="cfg-c-cancelar">Cancelar</button>
       </form>
     </div>`;
 }
@@ -245,104 +185,56 @@ function pintarUsuarios(usuarios) {
   });
 }
 
-// Estado real de un código, no solo activo/inactivo — "vencido" (se
-// arregla extendiendo la fecha) y "revocado" (permanente, hay que
-// generar uno nuevo) son cosas distintas y se pintan distinto.
-function estadoCodigo(c) {
-  if (!c.activo) return { texto: 'Revocado', clase: 'p-n' };
-  if (c.vigente_hasta && new Date(c.vigente_hasta) < new Date()) return { texto: 'Vencido', clase: 'p-i' };
-  return { texto: 'Activo', clase: 'p-c' };
-}
-
-function pintarKpisComunidades(comunidades) {
-  const activas = comunidades.filter((co) => co.activo).length;
-  const personas = comunidades.reduce((s, co) => s + co.personas_inscritas, 0);
-  const codigosActivos = comunidades.reduce((s, co) => s + co.codigos.filter((c) => estadoCodigo(c).clase === 'p-c').length, 0);
-  const items = [
-    { valor: activas, texto: 'Comunidades activas' },
-    { valor: personas, texto: 'Personas enroladas' },
-    { valor: codigosActivos, texto: 'Códigos disponibles ahora' },
-  ];
-  document.getElementById('cfg-com-kpis').innerHTML = items.map((it) => `<div class="kpi"><b>${it.valor}</b><span>${it.texto}</span></div>`).join('');
+function filaComunidad(co) {
+  const tipoTexto = TEXTO_TIPO_COMUNIDAD[co.tipo] || co.tipo || 'Sin tipo';
+  const reportes = co.reportes === 1 ? '1 reporte' : `${co.reportes} reportes`;
+  const punto = co.lat != null ? 'con punto en el mapa' : '<span class="com-sin-punto">sin punto en el mapa</span>';
+  return `
+    <div class="com-item${co.activo ? '' : ' inactiva'}" data-comunidad-bloque="${co.id}">
+      <div class="com-item-fila">
+        <div class="com-item-cuerpo">
+          <div class="com-item-titulo"><b>${esc(co.nombre)}</b><span class="pill p-a">${esc(tipoTexto)}</span>${co.activo ? '' : '<span class="pill p-n">Desactivada</span>'}</div>
+          <small>Cantón ${esc(co.canton || '—')} · ${reportes} · ${punto}</small>
+        </div>
+        ${co.activo
+          ? `<button type="button" class="btn ghost chico" data-mostrar-editar-comunidad="${co.id}">Editar</button>`
+          : `<button type="button" class="btn ghost chico" data-comunidad-toggle="${co.id}" data-activo="false" data-nombre="${esc(co.nombre)}">Reactivar</button>`}
+      </div>
+      ${co.activo ? `
+        <div class="com-editor" data-editor-comunidad="${co.id}" hidden>
+          <div class="barra-filtros">
+            <div class="campo-grupo" style="flex:1;min-width:200px"><label>Nombre</label><input class="campo-filtro" type="text" data-com-nombre="${co.id}" value="${esc(co.nombre)}"></div>
+            <div class="campo-grupo" style="min-width:150px"><label>Tipo</label><select class="campo-filtro" data-com-tipo="${co.id}">${opcionesTipoComunidad(co.tipo)}</select></div>
+          </div>
+          <label class="com-etiqueta">Punto en el mapa: toque el mapa para marcarlo o moverlo</label>
+          <div class="mapa-mini" data-mapa-comunidad="${co.id}"></div>
+          <p class="mapa-mini-ayuda" data-ubicacion-texto="${co.id}">${AYUDA_PUNTO}</p>
+          <input type="hidden" data-ubic-lat="${co.id}" value="${co.lat ?? ''}">
+          <input type="hidden" data-ubic-lon="${co.id}" value="${co.lon ?? ''}">
+          <div class="com-botones">
+            <button type="button" class="btn chico" data-guardar-comunidad="${co.id}">Guardar cambios</button>
+            <button type="button" class="btn ghost chico" data-cerrar-editor="${co.id}">Cancelar</button>
+            ${co.lat != null ? `<button type="button" class="btn ghost chico" data-quitar-ubicacion="${co.id}">Quitar el punto</button>` : ''}
+          </div>
+          <div class="zona-peligro">
+            <div><b>Desactivar comunidad</b><small>Deja de aparecer en la app para elegir. Los reportes que ya la tienen no cambian. Se puede reactivar.</small></div>
+            <button type="button" class="btn chico peligro" data-comunidad-toggle="${co.id}" data-activo="true" data-nombre="${esc(co.nombre)}">Desactivar</button>
+          </div>
+        </div>` : ''}
+    </div>`;
 }
 
 function pintarComunidades(comunidades) {
-  document.getElementById('cfg-comunidades').innerHTML = comunidades.map((co) => {
-    const codigosActivosDeLaComunidad = co.codigos.filter((c) => c.activo).length;
-    const codigos = co.codigos.map((c) => {
-      const estado = estadoCodigo(c);
-      // Para el aviso de "quedan otros N" al revocar ESTE código — no
-      // cuenta a sí mismo.
-      const otrosActivos = codigosActivosDeLaComunidad - (c.activo ? 1 : 0);
-      return `
-      <div class="codigo-row">
-        <div class="li-t">
-          <b class="codigo-mono">${c.codigo}</b>
-          <span class="pill ${estado.clase}">${estado.texto}</span>
-          <small>${textoVigencia(c)}</small>
-        </div>
-        ${c.activo ? `
-          <div class="cc-acciones">
-            <span class="li-a" data-copiar="${c.codigo}">Copiar</span>
-            <span class="li-a" data-extender="${c.id}">+1 semana</span>
-            <span class="li-a" data-mostrar-vigencia="${c.id}">Cambiar vigencia</span>
-            <span class="li-a peligro" data-revocar="${c.id}" data-codigo="${c.codigo}" data-otros-activos="${otrosActivos}">Revocar solo este código</span>
-          </div>
-          <div class="vigencia-controles" data-editor-vigencia="${c.id}" hidden>
-            <label>Desde <input type="date" data-vig-desde="${c.id}" value="${fechaInputSV(c.vigente_desde)}"></label>
-            <label>Hasta <input type="date" data-vig-hasta="${c.id}" value="${fechaInputSV(c.vigente_hasta)}"></label>
-            <span class="li-a" data-guardar-vigencia="${c.id}">Guardar</span>
-          </div>` : ''}
-      </div>`;
-    }).join('') || '<p class="sub2">Sin códigos todavía.</p>';
-    const tipoTexto = TEXTO_TIPO_COMUNIDAD[co.tipo] || co.tipo || 'Sin tipo';
-    return `
-      <div class="comunidad-bloque${co.activo ? '' : ' inactiva'}" data-comunidad-bloque="${co.id}">
-        <div class="cc-head">
-          <div class="cc-id">
-            <b>${co.nombre}</b>
-            <span class="pill p-a">${tipoTexto}</span>
-            ${co.activo ? '' : '<span class="pill p-n">Desactivada</span>'}
-          </div>
-          <small>${co.canton || '—'} · ${co.personas_inscritas} persona${co.personas_inscritas === 1 ? '' : 's'} inscrita${co.personas_inscritas === 1 ? '' : 's'}</small>
-        </div>
-        <div class="cc-acciones">
-          ${co.activo ? `<span class="li-a" data-mostrar-editar-comunidad="${co.id}">Editar</span>` : ''}
-          ${co.activo ? `<span class="li-a" data-generar="${co.id}">+ Generar código nuevo</span>` : ''}
-          <span class="li-a peligro" data-comunidad-toggle="${co.id}" data-activo="${co.activo}" data-nombre="${co.nombre}" data-codigos-activos="${codigosActivosDeLaComunidad}">${co.activo ? 'Desactivar esta comunidad' : 'Reactivar esta comunidad'}</span>
-        </div>
-        ${co.activo ? `
-          <div data-editor-comunidad="${co.id}" hidden>
-            <div class="cc-editar">
-              <label>Nombre <input type="text" data-com-nombre="${co.id}" value="${co.nombre}" style="width:220px"></label>
-              <label>Tipo
-                <select data-com-tipo="${co.id}">
-                  ${opcionesTipoComunidad(co.tipo)}
-                </select>
-              </label>
-              <span class="li-a" data-guardar-comunidad="${co.id}">Guardar</span>
-            </div>
-            <label>Ubicación de referencia — click en el mapa para marcar o mover el punto</label>
-            <div class="mapa-mini" data-mapa-comunidad="${co.id}"></div>
-            <p class="mapa-mini-ayuda" data-ubicacion-texto="${co.id}">${co.lat != null ? `Punto actual: ${co.lat.toFixed(4)}, ${co.lon.toFixed(4)}` : 'Sin marcar — no aparece en el Mapa de incidencias.'}</p>
-            <input type="hidden" data-ubic-lat="${co.id}" value="${co.lat ?? ''}">
-            <input type="hidden" data-ubic-lon="${co.id}" value="${co.lon ?? ''}">
-            ${co.lat != null ? `<span class="li-a" data-quitar-ubicacion="${co.id}">Quitar ubicación</span>` : ''}
-          </div>` : ''}
-        <div class="codigos-lista">${codigos}</div>
-      </div>`;
-  }).join('') || '<p class="sub2">Ninguna comunidad calza con la búsqueda.</p>';
+  document.getElementById('cfg-comunidades').innerHTML = comunidades.map(filaComunidad).join('')
+    || (comunidadesCache.length ? '<p class="sub2">Ninguna comunidad calza con la búsqueda.</p>' : '<p class="sub2">Todavía no hay comunidades. Agregue la primera.</p>');
 
-  // Mostrar/ocultar los dos formularios de edición — nunca se
-  // vuelven a pedir datos al servidor, así que no hace falta
-  // recargar nada; solo revela lo que ya está en el DOM. Sin esto
-  // cada comunidad y cada código mostraban SIEMPRE sus campos de
-  // edición abiertos, aunque nadie los fuera a tocar — Marco lo
-  // notó comparando con una maqueta mucho más despejada, 2026-10-20.
   document.querySelectorAll('[data-mostrar-editar-comunidad]').forEach((el) => {
     el.addEventListener('click', async () => {
       const id = el.dataset.mostrarEditarComunidad;
-      document.querySelector(`[data-editor-comunidad="${id}"]`).hidden = false;
+      const editor = document.querySelector(`[data-editor-comunidad="${id}"]`);
+      editor.hidden = !editor.hidden;
+      el.textContent = editor.hidden ? 'Editar' : 'Cerrar';
+      if (editor.hidden) return;
       const co = comunidades.find((c) => String(c.id) === id);
       await activarMapaUbicacion(document.querySelector(`[data-mapa-comunidad="${id}"]`), {
         latInicial: co?.lat ?? null,
@@ -350,87 +242,22 @@ function pintarComunidades(comunidades) {
         onCambio: (lat, lon) => {
           document.querySelector(`[data-ubic-lat="${id}"]`).value = lat;
           document.querySelector(`[data-ubic-lon="${id}"]`).value = lon;
-          document.querySelector(`[data-ubicacion-texto="${id}"]`).textContent = `Punto marcado: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+          document.querySelector(`[data-ubicacion-texto="${id}"]`).textContent = `Punto marcado: ${lat.toFixed(4)}, ${lon.toFixed(4)}. Se guarda al tocar "Guardar cambios".`;
         },
       });
     });
+  });
+  document.querySelectorAll('[data-cerrar-editor]').forEach((el) => {
+    el.addEventListener('click', () => pintarComunidades(comunidadesFiltradas(document.getElementById('cfg-com-buscar').value)));
   });
   document.querySelectorAll('[data-quitar-ubicacion]').forEach((el) => {
     el.addEventListener('click', () => {
       const id = el.dataset.quitarUbicacion;
       document.querySelector(`[data-ubic-lat="${id}"]`).value = 'quitar';
       document.querySelector(`[data-ubic-lon="${id}"]`).value = 'quitar';
-      document.querySelector(`[data-ubicacion-texto="${id}"]`).textContent = 'Se quitará al guardar — sin marcar no aparece en el Mapa de incidencias.';
+      document.querySelector(`[data-ubicacion-texto="${id}"]`).textContent = 'El punto se quita al tocar "Guardar cambios". Sin punto, sus reportes no aparecen en el Mapa.';
       document.querySelector(`[data-mapa-comunidad="${id}"]`)._controlUbicacion?.quitarMarcador();
       el.remove();
-    });
-  });
-  document.querySelectorAll('[data-mostrar-vigencia]').forEach((el) => {
-    el.addEventListener('click', () => {
-      document.querySelector(`[data-editor-vigencia="${el.dataset.mostrarVigencia}"]`).hidden = false;
-    });
-  });
-  document.querySelectorAll('[data-copiar]').forEach((el) => {
-    el.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(el.dataset.copiar);
-        const original = el.textContent;
-        el.textContent = '¡Copiado!';
-        setTimeout(() => { el.textContent = original; }, 1200);
-      } catch {
-        alert('No se pudo copiar — el código es: ' + el.dataset.copiar);
-      }
-    });
-  });
-  document.querySelectorAll('[data-revocar]').forEach((el) => {
-    el.addEventListener('click', async () => {
-      const otros = Number(el.dataset.otrosActivos);
-      const nota = otros > 0
-        ? ` La comunidad tiene ${otros} código${otros === 1 ? '' : 's'} más activo${otros === 1 ? '' : 's'} que seguirá${otros === 1 ? '' : 'n'} funcionando.`
-        : ' Es el único código activo de esta comunidad: nadie más podrá enrolarse hasta generar uno nuevo.';
-      if (!confirm(`¿Revocar el código ${el.dataset.codigo}? Es permanente — no se puede reactivar, habría que generar uno nuevo. No afecta a quienes ya se enrolaron con él.${nota}`)) return;
-      el.textContent = 'Revocando…';
-      const r = await revocarCodigo(el.dataset.revocar);
-      if (r.ok) await cargarComunidades();
-    });
-  });
-  document.querySelectorAll('[data-guardar-vigencia]').forEach((el) => {
-    el.addEventListener('click', async () => {
-      const id = el.dataset.guardarVigencia;
-      const desde = document.querySelector(`[data-vig-desde="${id}"]`).value;
-      const hasta = document.querySelector(`[data-vig-hasta="${id}"]`).value;
-      el.textContent = 'Guardando…';
-      // Inclusive: "hasta" llega a las 23:59:59 de ese día, no a la
-      // medianoche de inicio — pedido explícito de Marco.
-      const r = await actualizarVigenciaCodigo(id, {
-        vigente_desde: desde ? inicioDeDiaSV(desde) : null,
-        vigente_hasta: hasta ? finDeDiaSV(hasta) : null,
-      });
-      if (r.ok) await cargarComunidades();
-      else { el.textContent = 'Guardar'; alert('No se pudo guardar la vigencia: ' + r.error); }
-    });
-  });
-  document.querySelectorAll('[data-extender]').forEach((el) => {
-    el.addEventListener('click', async () => {
-      const id = el.dataset.extender;
-      // Si ya tenía una fecha "hasta", extiende DESDE esa fecha (dos
-      // clics seguidos suman 14 días, no pisan el primero). Si no
-      // tenía ninguna, arranca desde hoy.
-      const inputHasta = document.querySelector(`[data-vig-hasta="${id}"]`);
-      const base = inputHasta.value || hoySV();
-      const nuevaFecha = sumarDias(base, 7);
-      el.textContent = 'Extendiendo…';
-      const r = await actualizarVigenciaCodigo(id, { vigente_hasta: finDeDiaSV(nuevaFecha) });
-      if (r.ok) await cargarComunidades();
-      else { el.textContent = '+1 semana'; alert('No se pudo extender: ' + r.error); }
-    });
-  });
-  document.querySelectorAll('[data-generar]').forEach((el) => {
-    el.addEventListener('click', async () => {
-      el.textContent = 'Generando…';
-      const r = await generarCodigo(el.dataset.generar);
-      if (r.ok) await cargarComunidades();
-      else el.textContent = '+ Generar código nuevo';
     });
   });
   document.querySelectorAll('[data-guardar-comunidad]').forEach((el) => {
@@ -438,38 +265,28 @@ function pintarComunidades(comunidades) {
       const id = el.dataset.guardarComunidad;
       const nombre = document.querySelector(`[data-com-nombre="${id}"]`).value.trim();
       const tipo = document.querySelector(`[data-com-tipo="${id}"]`).value.trim();
-      // El punto de ubicación solo viaja si de verdad se tocó: "quitar"
-      // (clic en "Quitar ubicación") manda {lat:null,lon:null} para
-      // borrarlo; un valor numérico lo fija o lo mueve; vacío (nunca se
-      // tocó el mapa) no manda ni lat ni lon, para no pisar en blanco
-      // un punto que ya tenía la comunidad.
+      // El punto solo viaja si de verdad se tocó: "quitar" lo borra, un
+      // número lo fija o lo mueve, vacío no pisa el que ya tenía.
       const ubicLat = document.querySelector(`[data-ubic-lat="${id}"]`).value;
       const ubicLon = document.querySelector(`[data-ubic-lon="${id}"]`).value;
       let cambiosUbicacion = {};
       if (ubicLat === 'quitar') cambiosUbicacion = { lat: null, lon: null };
       else if (ubicLat !== '' && ubicLon !== '') cambiosUbicacion = { lat: Number(ubicLat), lon: Number(ubicLon) };
+      el.disabled = true;
       el.textContent = 'Guardando…';
       const r = await actualizarComunidad(id, { nombre, tipo, ...cambiosUbicacion });
       if (r.ok) await cargarComunidades();
-      else { el.textContent = 'Guardar'; alert('No se pudo guardar: ' + r.error); }
+      else { el.disabled = false; el.textContent = 'Guardar cambios'; alert('No se pudo guardar: ' + r.error); }
     });
   });
   document.querySelectorAll('[data-comunidad-toggle]').forEach((el) => {
     el.addEventListener('click', async () => {
       const activo = el.dataset.activo === 'true';
-      // Solo confirma al desactivar — reactivar no tiene efecto
-      // secundario que avisar.
-      if (activo) {
-        const n = Number(el.dataset.codigosActivos);
-        const avisoCodigos = n > 0
-          ? `Bloqueará el enrolamiento con ${n === 1 ? 'su código activo' : 'sus ' + n + ' códigos activos'}, aunque sigan vigentes.`
-          : 'No tiene códigos activos en este momento.';
-        if (!confirm(`¿Desactivar "${el.dataset.nombre}"? ${avisoCodigos} Se puede reactivar después. No afecta a quienes ya se enrolaron.`)) return;
-      }
-      el.textContent = 'Guardando…';
+      if (activo && !confirm(`¿Desactivar "${el.dataset.nombre}"?\n\nDeja de aparecer en la app para elegirla al reportar. Los reportes que ya la tienen no cambian. Se puede reactivar después.`)) return;
+      el.disabled = true;
       const r = await actualizarComunidad(el.dataset.comunidadToggle, { activo: !activo });
       if (r.ok) await cargarComunidades();
-      else el.textContent = activo ? 'Desactivar esta comunidad' : 'Reactivar esta comunidad';
+      else { el.disabled = false; alert('No se pudo guardar: ' + r.error); }
     });
   });
 }
@@ -480,15 +297,12 @@ async function cargarUsuarios() {
   if (r.ok) pintarUsuarios(r.data.usuarios);
 }
 
-// Las KPI siempre reflejan TODAS las comunidades — buscar filtra la
-// lista de tarjetas, no cambia lo que dicen los números de arriba.
 function comunidadesFiltradas(filtro) {
   const q = filtro.trim().toLowerCase();
   if (!q) return comunidadesCache;
   return comunidadesCache.filter((co) =>
     co.nombre.toLowerCase().includes(q)
-    || (co.canton || '').toLowerCase().includes(q)
-    || co.codigos.some((c) => c.codigo.toLowerCase().includes(q)));
+    || (co.canton || '').toLowerCase().includes(q));
 }
 
 async function cargarComunidades() {
@@ -496,7 +310,6 @@ async function cargarComunidades() {
   if (!esVistaActiva('config')) return; // se navegó a otra vista mientras tanto
   if (!r.ok) return;
   comunidadesCache = r.data.comunidades;
-  pintarKpisComunidades(comunidadesCache);
   pintarComunidades(comunidadesFiltradas(document.getElementById('cfg-com-buscar')?.value || ''));
   cantonesCache = r.data.cantones_disponibles;
   const select = document.getElementById('cfg-c-canton');
@@ -529,7 +342,7 @@ function enlazarFormularios() {
 
   const formC = document.getElementById('cfg-form-comunidad');
   document.getElementById('cfg-mostrar-form-comunidad').addEventListener('click', async () => {
-    formC.style.display = 'block';
+    formC.hidden = false;
     // Recién visible: ahora sí tiene tamaño real para que Leaflet lo mida.
     await activarMapaUbicacion(document.getElementById('cfg-c-mapa'), {
       latInicial: null,
@@ -537,15 +350,15 @@ function enlazarFormularios() {
       onCambio: (lat, lon) => {
         document.getElementById('cfg-c-lat').value = lat;
         document.getElementById('cfg-c-lon').value = lon;
-        document.getElementById('cfg-c-ubicacion-texto').textContent = `Punto marcado: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+        document.getElementById('cfg-c-ubicacion-texto').textContent = `Punto marcado: ${lat.toFixed(4)}, ${lon.toFixed(4)}.`;
       },
     });
   });
-  document.getElementById('cfg-c-cancelar').addEventListener('click', () => { formC.style.display = 'none'; formC.reset(); });
+  document.getElementById('cfg-c-cancelar').addEventListener('click', () => { formC.hidden = true; formC.reset(); });
   formC.addEventListener('submit', async (e) => {
     e.preventDefault();
     const error = document.getElementById('cfg-c-error');
-    error.style.display = 'none';
+    error.hidden = true;
     const lat = document.getElementById('cfg-c-lat').value;
     const lon = document.getElementById('cfg-c-lon').value;
     const r = await crearComunidad({
@@ -556,12 +369,12 @@ function enlazarFormularios() {
     });
     if (!r.ok) {
       error.textContent = r.error;
-      error.style.display = 'block';
+      error.hidden = false;
       return;
     }
-    formC.style.display = 'none';
+    formC.hidden = true;
     formC.reset();
-    document.getElementById('cfg-c-ubicacion-texto').textContent = 'Sin marcar — la comunidad no va a aparecer en el Mapa de incidencias hasta que tenga un punto.';
+    document.getElementById('cfg-c-ubicacion-texto').textContent = AYUDA_PUNTO;
     document.getElementById('cfg-c-mapa')._controlUbicacion?.quitarMarcador();
     await cargarComunidades();
   });
@@ -579,11 +392,12 @@ export async function montar(raiz) {
   if (usuario?.rol !== 'administrador') {
     raiz.innerHTML = `
       <div class="head"><div><h1>Configuración</h1></div></div>
-      <div class="nota-demo"><b>Esta sección es solo para administradores.</b> Si necesita crear una cuenta nueva o un código de comunidad, pídaselo a alguien con ese rol.</div>`;
+      <div class="nota-demo"><b>Esta sección es solo para administradores.</b> Si necesita una cuenta nueva o un código de registro, pídaselo a alguien con ese rol.</div>`;
     return;
   }
 
   raiz.innerHTML = esqueleto();
+  enlazarCodigos();
   enlazarFormularios();
   // Sin esperar: el mapita de ubicación recién hace falta si la
   // persona abre "Nueva comunidad" o "Editar" — probablemente unos
@@ -591,6 +405,5 @@ export async function montar(raiz) {
   // ahora, de fondo, evita que el primer clic en el mapa se sienta
   // "muerto" mientras Leaflet todavía está bajando del CDN.
   cargarLeaflet();
-  await cargarUsuarios();
-  await cargarComunidades();
+  await Promise.all([cargarCodigos(), cargarComunidades(), cargarUsuarios()]);
 }

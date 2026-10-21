@@ -193,34 +193,64 @@ tbody tr:hover{background:var(--surface-1)}
 .vigencia-controles label{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--on-surface-var)}
 .vigencia-controles input[type="date"]{border:1px solid var(--outline-var);border-radius:6px;padding:3px 6px;font-size:12px;font-family:inherit}
 
-/* Comunidades: separadas por un solo borde inferior, como cualquier
-   .lista-item del resto del panel — nada de caja dentro de caja
-   dentro de caja. La primera versión le ponía borde propio a la
-   tarjeta de la comunidad Y un borde izquierdo a sus códigos Y borde
-   a cada <input type=date> siempre visible: hasta cuatro bordes
-   compitiendo a la vez. Marco lo notó comparando contra una maqueta
-   mucho más despejada (2026-10-20) — la jerarquía ahora la da la
-   tipografía y el espacio, no líneas: título en negrita, metadatos en
-   gris chico, acciones agrupadas debajo de lo que afectan. Los
-   formularios de editar nombre/tipo y de cambiar vigencia empiezan
-   ocultos (`hidden`) y solo aparecen al pedirlos — antes estaban
-   siempre abiertos para cada comunidad y cada código, aunque nadie
-   los fuera a tocar. */
-.comunidad-bloque{padding:18px 0;border-bottom:1px solid var(--outline-var)}
-.comunidad-bloque:last-child{border-bottom:0}
-.comunidad-bloque.inactiva{opacity:.6}
-.cc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
-.cc-head .cc-id{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.cc-head b{font-size:14px}
-.cc-head small{font-size:11.5px;color:var(--on-surface-var)}
-.cc-editar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--on-surface-var)}
-.cc-editar input,.cc-editar select{border:1px solid var(--outline-var);border-radius:6px;padding:4px 7px;font-size:12px;font-family:inherit}
-.cc-acciones{display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap}
-.codigos-lista{margin-top:14px;padding-left:4px;display:flex;flex-direction:column;gap:14px}
-.mapa-mini{height:170px;border-radius:var(--r-s);border:1px solid var(--outline-var);margin-top:8px}
+/* Configuración (vistas/config.js y config-codigos.js). Tres cajas
+   separadas: Códigos de registro, Comunidades y Personal. Dentro de
+   cada una, una lista de filas compactas separadas por un solo borde:
+   el nombre en negrita, el estado en una etiqueta, los datos en gris.
+   Todas las acciones son botones; la peligrosa (Dar de baja,
+   Desactivar) se distingue y pide confirmación. Los formularios de
+   edición empiezan cerrados y el mapa solo aparece dentro de "Editar"
+   de una comunidad. */
+.caja-cabecera{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.caja-cabecera .btn{white-space:nowrap}
+.cod-form{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:14px;background:var(--surface-1);border-radius:var(--r-s)}
+.cod-campo-codigo{flex:1;min-width:240px}
+.cod-fila-codigo{display:flex;gap:8px}
+.cod-fila-codigo .campo-filtro{flex:1;min-width:0;text-transform:uppercase}
+.cod-ayuda{font-size:11px;color:var(--on-surface-var)}
+.cod-error{background:var(--error-c);color:var(--error);border-radius:var(--r-s);padding:10px 13px;font-size:13px;margin-top:10px}
+.cod-recien{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--ok-c);color:var(--ok);border-radius:var(--r-s);padding:10px 13px;font-size:13px;margin-top:10px}
+.cod-error[hidden],.cod-recien[hidden],.cod-editor[hidden],.com-editor[hidden],.com-form[hidden]{display:none}
+.cod-titulo{font-size:13px;font-weight:700;margin:20px 0 2px}
+.cod-item{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--outline-var)}
+.cod-item:last-child{border-bottom:0}
+.cod-item-cuerpo{min-width:0}
+.cod-item-titulo,.com-item-titulo{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cod-item-titulo .codigo-mono{font-size:15px;overflow-wrap:anywhere}
+.cod-item small,.com-item small{display:block;font-size:11.5px;color:var(--on-surface-var);margin-top:2px}
+.cod-item-acciones{display:flex;gap:8px;flex-wrap:wrap}
+.btn.cod-baja{color:var(--error);border-color:var(--error-c)}
+.cod-editor{flex-basis:100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--on-surface-var)}
+.cod-editor label{display:flex;align-items:center;gap:6px}
+.cod-item--historial .codigo-mono{color:var(--on-surface-var)}
+.cod-sin-fin{color:var(--warn);font-weight:600}
+.cod-vacio{padding:12px 0;color:var(--warn);font-weight:600}
+.cod-historial{margin-top:16px;border-top:1px solid var(--outline-var);padding-top:12px}
+.cod-historial summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--primary)}
+.cod-historial .sub2{margin:6px 0 4px}
+.com-form{margin:14px 0;padding:14px;background:var(--surface-1);border-radius:var(--r-s)}
+.com-buscar{margin:14px 0 4px}
+.com-etiqueta{display:block;font-size:12px;font-weight:700;color:var(--on-surface-var);margin-top:12px}
+.com-botones{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.com-item{padding:12px 0;border-bottom:1px solid var(--outline-var)}
+.com-item:last-child{border-bottom:0}
+.com-item.inactiva .com-item-cuerpo{opacity:.6}
+.com-item-fila{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.com-item-cuerpo{min-width:0}
+.com-item-titulo b{font-size:14px;overflow-wrap:anywhere}
+.com-sin-punto{color:var(--warn);font-weight:600}
+.com-editor{margin-top:12px;padding:14px;background:var(--surface-1);border-radius:var(--r-s)}
+.zona-peligro{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:12px;border-top:1px solid var(--outline-var)}
+.zona-peligro b{display:block;font-size:13px;color:var(--error)}
+.zona-peligro small{font-size:11.5px;color:var(--on-surface-var)}
+.mapa-mini{height:200px;border-radius:var(--r-s);border:1px solid var(--outline-var);margin-top:8px}
 .mapa-mini-ayuda{font-size:11px;color:var(--on-surface-var);margin-top:4px}
-.codigo-row .li-t{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.codigo-row .li-t small{display:block;width:100%;font-size:11.5px;color:var(--on-surface-var);margin-top:2px}
+@media (max-width:640px){
+  .cod-item-acciones{width:100%}
+  .cod-form .campo-grupo{flex:1 1 calc(50% - 6px)}
+  .cod-form .cod-campo-codigo{flex-basis:100%}
+  .cod-form .btn[type=submit]{width:100%}
+}
 
 /* detalle de caso */
 #overlay{display:none;position:fixed;inset:0;background:rgba(10,25,22,.45);z-index:80;

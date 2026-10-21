@@ -27,7 +27,7 @@ await p.fill('#login-clave', 'prueba-dev-2026');
 await p.click('#login-boton');
 await p.waitForSelector('#app-shell:not([hidden])', { timeout: 8000 });
 await p.click('.lat a[data-v="config"]');
-await p.waitForSelector('[data-generar]', { timeout: 8000 });
+await p.waitForSelector('[data-mostrar-editar-comunidad]', { timeout: 8000 });
 
 const NOMBRE = 'Comunidad con mapa ' + Date.now();
 let idComunidad;
@@ -74,10 +74,9 @@ await paso('el_mapa_de_incidencias_ya_la_cuenta', async () => {
 
 await paso('la_comunidad_guardo_lat_lon_reales', async () => {
   const bloque = p.locator(`[data-comunidad-bloque="${idComunidad}"]`);
+  const texto = await bloque.locator('.com-item-cuerpo small').textContent();
+  if (!texto.includes('con punto en el mapa')) throw new Error('no se guardó el punto al crear: ' + texto);
   await bloque.locator('[data-mostrar-editar-comunidad]').click();
-  await p.waitForSelector(`[data-ubicacion-texto="${idComunidad}"]`, { timeout: 2000 });
-  const texto = await p.locator(`[data-ubicacion-texto="${idComunidad}"]`).textContent();
-  if (!texto.startsWith('Punto actual:')) throw new Error('no se guardó el punto al crear: ' + texto);
 });
 
 await paso('mover_el_punto_y_guardar_lo_actualiza', async () => {
@@ -99,17 +98,16 @@ await paso('quitar_ubicacion_la_borra_de_verdad', async () => {
   await bloque.locator('[data-guardar-comunidad]').click();
   await p.waitForTimeout(600);
   await p.waitForSelector(`text=${NOMBRE}`, { timeout: 8000 });
-  const bloque2 = p.locator(`[data-comunidad-bloque="${idComunidad}"]`);
-  await bloque2.locator('[data-mostrar-editar-comunidad]').click();
-  const texto = await p.locator(`[data-ubicacion-texto="${idComunidad}"]`).textContent();
-  if (!texto.startsWith('Sin marcar')) throw new Error('la ubicación debía quedar vacía: ' + texto);
+  const texto = await p.locator(`[data-comunidad-bloque="${idComunidad}"] .com-item-cuerpo small`).textContent();
+  if (!texto.includes('sin punto en el mapa')) throw new Error('la ubicación debía quedar vacía: ' + texto);
 });
 
 // Limpieza — no es un fixture compartido, es exclusiva de esta corrida.
 await paso('limpieza_desactivar_comunidad_de_prueba', async () => {
   const bloque = p.locator(`[data-comunidad-bloque="${idComunidad}"]`);
+  await bloque.locator('[data-mostrar-editar-comunidad]').click();
   await bloque.locator('[data-comunidad-toggle]').click();
-  await p.waitForTimeout(400);
+  await p.waitForSelector(`[data-comunidad-bloque="${idComunidad}"] .pill:has-text("Desactivada")`, { timeout: 8000 });
 });
 
 console.log(JSON.stringify(s, null, 2));

@@ -81,11 +81,17 @@ const CONTENIDOS = {
     texto: 'Cree la cuenta con su nombre, correo y una clave temporal — la persona puede pedir que se la cambien después. El rol "operador" no puede publicar al muro ni administrar cuentas o comunidades; "administrador" sí.',
     lista: ['Nunca se borra una cuenta, solo se desactiva: así la bitácora de quién hizo qué se mantiene intacta.', 'Desactivar cierra de inmediato cualquier sesión abierta de esa persona.']
   },
+  'config-codigos': {
+    overline: 'Ayuda · Códigos de registro',
+    titulo: '¿Para qué sirve un código de registro?',
+    texto: 'Es la palabra o frase que una persona escribe una sola vez, al instalar la aplicación, para poder registrarse. Sirve para controlar quién entra: se reparte en una capacitación o una gira y vale solo entre las fechas que usted elija. No dice de qué comunidad es la persona.',
+    lista: ['Para una gira con dos equipos en lugares distintos, cree un código para cada equipo.', 'Un código que ya se creó, aunque esté vencido o revocado, no se puede volver a crear: así nadie entra con un código viejo.', 'Dar de baja un código no afecta a quien ya se registró con él.']
+  },
   'config-comunidades': {
-    overline: 'Ayuda · Comunidades y códigos',
-    titulo: '¿Para qué sirve un código de comunidad?',
-    texto: 'Es lo que alguien de esa comunidad escribe una sola vez, al instalar la aplicación, para entrar al sistema correcto — se reparte en las capacitaciones. Dar de alta una comunidad genera su primer código automáticamente.',
-    lista: ['Puede generar códigos adicionales para la misma comunidad cuando haga falta repartir más.', 'Revocar un código no afecta a quien ya se inscribió con él antes — solo impide usarlo para entrar de nuevo.']
+    overline: 'Ayuda · Comunidades',
+    titulo: '¿Para qué sirve esta lista?',
+    texto: 'Son los lugares que la persona puede elegir en "¿Dónde fue?" cuando hace un reporte. Quien reporta puede elegir cualquier comunidad: alguien de San Salvador puede reportar lo que pasa en Sonsonate.',
+    lista: ['El punto en el mapa ubica la comunidad en el Mapa del panel. No se muestra en la app ni en el muro.', 'Desactivar una comunidad la quita de la lista de la app. Los reportes que ya la tienen no cambian.']
   },
   respaldos: {
     overline: 'Ayuda · Respaldos',
