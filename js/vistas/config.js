@@ -72,6 +72,28 @@ function hoySV() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
 }
 
+// Mismas 4 opciones que el formulario "Agregar comunidad nueva" —
+// antes el de editar era una caja de texto libre, así que una
+// comunidad ya creada se podía dejar con un valor mal escrito o con
+// otra mayúscula que ya no calzara con nada (encontrado al revisar
+// con Marco por qué una comunidad real mostraba "adesco" en vez de
+// "ADESCO", 2026-10-20).
+const TEXTO_TIPO_COMUNIDAD = { adesco: 'ADESCO', comite: 'Comité', caserio: 'Caserío', otro: 'Otro' };
+
+// Si el valor guardado no es ninguno de los 4 (dato viejo de antes de
+// este formulario, o cargado a mano por SQL), se agrega como opción
+// aparte en vez de dejar que el <select> mienta mostrando "ADESCO"
+// seleccionado por ser la primera de la lista sin que nada calzara.
+function opcionesTipoComunidad(valorActual) {
+  const conocidas = Object.keys(TEXTO_TIPO_COMUNIDAD)
+    .map((v) => `<option value="${v}"${valorActual === v ? ' selected' : ''}>${TEXTO_TIPO_COMUNIDAD[v]}</option>`)
+    .join('');
+  if (valorActual && !TEXTO_TIPO_COMUNIDAD[valorActual]) {
+    return conocidas + `<option value="${valorActual}" selected>${valorActual} (valor antiguo)</option>`;
+  }
+  return conocidas;
+}
+
 function textoVigencia(c) {
   if (!c.activo) return 'Revocado';
   const vencido = c.vigente_hasta && new Date(c.vigente_hasta) < new Date();
@@ -121,10 +143,7 @@ function esqueleto() {
           <div class="campo-grupo" style="flex:1;min-width:180px"><label>Nombre de la comunidad</label><input class="campo-filtro" id="cfg-c-nombre" required></div>
           <div class="campo-grupo" style="min-width:150px"><label>Tipo</label>
             <select class="campo-filtro" id="cfg-c-tipo">
-              <option value="adesco">ADESCO</option>
-              <option value="comite">Comité</option>
-              <option value="caserio">Caserío</option>
-              <option value="otro">Otro</option>
+              ${Object.entries(TEXTO_TIPO_COMUNIDAD).map(([v, texto]) => `<option value="${v}">${texto}</option>`).join('')}
             </select>
           </div>
           <div class="campo-grupo" style="flex:1;min-width:220px"><label>Cantón</label><select class="campo-filtro" id="cfg-c-canton"></select></div>
@@ -184,7 +203,11 @@ function pintarComunidades(comunidades) {
         ${co.activo ? `
           <div class="vigencia-controles" style="padding-left:16px">
             <label>Nombre <input type="text" data-com-nombre="${co.id}" value="${co.nombre}" style="width:220px"></label>
-            <label>Tipo <input type="text" data-com-tipo="${co.id}" value="${co.tipo || ''}" style="width:140px"></label>
+            <label>Tipo
+              <select data-com-tipo="${co.id}">
+                ${opcionesTipoComunidad(co.tipo)}
+              </select>
+            </label>
             <span class="li-a" data-guardar-comunidad="${co.id}">Guardar</span>
           </div>` : ''}
         ${codigos}
