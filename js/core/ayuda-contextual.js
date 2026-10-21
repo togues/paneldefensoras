@@ -84,14 +84,8 @@ const CONTENIDOS = {
   'config-codigos': {
     overline: 'Ayuda · Códigos de registro',
     titulo: '¿Para qué sirve un código de registro?',
-    texto: 'Es la palabra o frase que una persona escribe una sola vez, al instalar la aplicación, para poder registrarse. Sirve para controlar quién entra: se reparte en una capacitación o una gira y vale solo entre las fechas que usted elija. No dice de qué comunidad es la persona.',
+    texto: 'Es la palabra que una persona escribe una sola vez, al instalar la aplicación, para poder registrarse. Sirve para controlar quién entra: se reparte en una capacitación o una gira y vale solo entre las fechas que usted elija. No tiene nada que ver con el lugar: cada reporte dice dónde ocurrió.',
     lista: ['Para una gira con dos equipos en lugares distintos, cree un código para cada equipo.', 'Un código que ya se creó, aunque esté vencido o revocado, no se puede volver a crear: así nadie entra con un código viejo.', 'Dar de baja un código no afecta a quien ya se registró con él.']
-  },
-  'config-comunidades': {
-    overline: 'Ayuda · Comunidades',
-    titulo: '¿Para qué sirve esta lista?',
-    texto: 'Son los lugares que la persona puede elegir en "¿Dónde fue?" cuando hace un reporte. Quien reporta puede elegir cualquier comunidad: alguien de San Salvador puede reportar lo que pasa en Sonsonate.',
-    lista: ['El punto en el mapa ubica la comunidad en el Mapa del panel. No se muestra en la app ni en el muro.', 'Desactivar una comunidad la quita de la lista de la app. Los reportes que ya la tienen no cambian.']
   },
   respaldos: {
     overline: 'Ayuda · Respaldos',

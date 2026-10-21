@@ -2,10 +2,10 @@
    Configuración → Códigos de registro (migración 012,
    docs/decision-08-codigo-de-registro.md).
 
-   Un código es una palabra o frase ("ÁGUILA VERDE") que REDNA reparte
-   en una capacitación o una gira para controlar quién se registra en
-   la app. Vale entre dos fechas y no dice nada de la persona ni de su
-   comunidad. Un código ya creado no se puede volver a crear nunca,
+   Un código es una o dos palabras cortas ("CEIBA", máximo 20
+   caracteres) que REDNA reparte en una capacitación o una gira para
+   controlar quién se registra en la app. Vale entre dos fechas y no
+   tiene nada que ver con ubicación, cartografía ni comunidad. Un código ya creado no se puede volver a crear nunca,
    aunque haya vencido: por eso lo vencido y lo revocado quedan en un
    historial de solo lectura, sin "extender".
    ===================================================================== */
@@ -56,16 +56,28 @@ export function esqueletoCodigos() {
   return `
     <div class="caja" id="cfg-codigos-caja">
       <h2>Códigos de registro ${botonAyuda('config-codigos')}</h2>
-      <p class="sub">La palabra o frase que una persona escribe para registrarse en la app. Vale solo entre las fechas que elija.</p>
+      <p class="sub">La palabra que una persona escribe para registrarse en la app. Vale solo entre las fechas que elija.</p>
+
+      <details class="cod-instructivo" id="cod-instructivo" open>
+        <summary>Lea esto antes de crear un código</summary>
+        <ol>
+          <li><b>Una o dos palabras fáciles de dictar</b>, de 4 a 20 letras o números: CEIBA, RIO CLARO, MAIZ 24. Evite frases largas: la gente lo escribe en un teléfono, a veces con poca práctica.</li>
+          <li><b>Mejor sin tildes ni ñ.</b> El código se guarda en mayúsculas y sin tildes, y así aparece en la lista: dicte ese. Si alguien escribe "ceiba", "Ceiba" o "CÉIBA", la app lo acepta igual.</li>
+          <li><b>Ponga siempre la fecha final.</b> Pasada esa fecha el código deja de servir solo, sin que nadie tenga que acordarse.</li>
+          <li><b>Un código no se repite nunca.</b> Si ya se usó, aunque esté vencido o dado de baja, no se puede volver a crear: invente otro.</li>
+          <li><b>Un código por equipo.</b> Si dos compañeros salen de gira a lugares distintos, cree uno para cada uno.</li>
+          <li>El código <b>no tiene nada que ver con el lugar</b>: cada persona dice en cada reporte dónde ocurrió el hecho.</li>
+        </ol>
+      </details>
 
       <form id="cod-form" class="cod-form">
         <div class="campo-grupo cod-campo-codigo">
           <label for="cod-texto">Código</label>
           <div class="cod-fila-codigo">
-            <input id="cod-texto" class="campo-filtro" maxlength="40" autocomplete="off" placeholder="Ej.: Águila verde">
+            <input id="cod-texto" class="campo-filtro" maxlength="20" autocomplete="off" placeholder="Ej.: CEIBA">
             <button type="button" class="btn ghost chico" id="cod-azar">Inventar uno</button>
           </div>
-          <small class="cod-ayuda">Entre 6 y 40 letras o números. No importan las mayúsculas ni las tildes. No puede ser uno que ya se usó.</small>
+          <small class="cod-ayuda">De 4 a 20 letras o números. Se guarda en mayúsculas y sin tildes.</small>
         </div>
         <div class="campo-grupo">
           <label for="cod-desde">Sirve desde</label>
@@ -179,7 +191,18 @@ export async function cargarCodigos() {
   pintar(r.data.codigos);
 }
 
+const CLAVE_INSTRUCTIVO = 'panel_instructivo_codigos_cerrado';
+
 export function enlazarCodigos() {
+  // Abierto hasta que la persona lo cierre una vez; después queda
+  // cerrado en este navegador (solo una comodidad: si el almacenamiento
+  // falla, se muestra abierto).
+  const instructivo = document.getElementById('cod-instructivo');
+  try { if (localStorage.getItem(CLAVE_INSTRUCTIVO) === '1') instructivo.open = false; } catch { /* sin almacenamiento: abierto */ }
+  instructivo.addEventListener('toggle', () => {
+    try { localStorage.setItem(CLAVE_INSTRUCTIVO, instructivo.open ? '0' : '1'); } catch { /* sin almacenamiento */ }
+  });
+
   const form = document.getElementById('cod-form');
   const error = document.getElementById('cod-error');
   const recien = document.getElementById('cod-recien');
@@ -207,7 +230,7 @@ export function enlazarCodigos() {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const texto = document.getElementById('cod-texto').value.trim();
-    if (!texto) { error.textContent = 'Escriba una palabra o frase, o toque "Inventar uno".'; error.hidden = false; return; }
+    if (!texto) { error.textContent = 'Escriba una palabra, o toque "Inventar uno".'; error.hidden = false; return; }
     crear(texto);
   });
   // Sin texto: el servidor inventa uno que nunca se usó ("CEIBA ALTA 47").

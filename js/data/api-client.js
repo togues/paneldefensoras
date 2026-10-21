@@ -145,18 +145,6 @@ export function actualizarUsuario(id, cambios) {
   return pedir('/admin/usuarios/' + encodeURIComponent(id), { method: 'PATCH', body: cambios });
 }
 
-export function obtenerComunidades() {
-  return pedir('/admin/comunidades');
-}
-
-export function crearComunidad(datos) {
-  return pedir('/admin/comunidades', { method: 'POST', body: datos });
-}
-
-export function actualizarComunidad(id, cambios) {
-  return pedir('/admin/comunidades/' + encodeURIComponent(id), { method: 'PATCH', body: cambios });
-}
-
 // Códigos de registro (migración 012): sueltos, sin comunidad.
 export function obtenerCodigos() {
   return pedir('/admin/codigos');

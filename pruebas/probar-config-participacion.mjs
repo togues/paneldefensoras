@@ -64,33 +64,10 @@ await paso('config_desactivar_la_cuenta_recien_creada', async () => {
   await p.waitForSelector(`.lista-item:has-text("${NOMBRE_USUARIO_PRUEBA}") [data-usuario-toggle][data-activo="false"]`, { timeout: 4000 });
 });
 
-// Con marca de tiempo, no un nombre fijo: "Comunidad E2E de Prueba" a
-// secas se fue acumulando duplicada en el DB compartido cada vez que
-// esta prueba corrió a lo largo de la sesión (3 filas con el mismo
-// nombre, encontradas el 2026-10-20) — hasText() con varias coincide
-// con todas a la vez y revienta en modo estricto de Playwright.
-const NOMBRE_COMUNIDAD_PRUEBA = 'Comunidad E2E de Prueba ' + Date.now();
-
-// Desde la migración 012 una comunidad nueva NO genera código: el
-// código de registro es aparte (probar-codigos-registro.mjs).
-await paso('config_crea_comunidad_sin_codigo', async () => {
-  await p.click('#cfg-mostrar-form-comunidad');
-  await p.waitForFunction(() => document.getElementById('cfg-c-canton')?.options.length > 0, { timeout: 4000 });
-  await p.fill('#cfg-c-nombre', NOMBRE_COMUNIDAD_PRUEBA);
-  await p.click('#cfg-form-comunidad button[type="submit"]');
-  await p.waitForSelector(`text=${NOMBRE_COMUNIDAD_PRUEBA}`, { timeout: 8000 });
-
-  // Bloque scoped por data-comunidad-bloque (id real de la comunidad recién
-  // creada) — nunca por texto, que puede matchear el div ancestro de
-  // CUALQUIER comunidad (p. ej. "ADESCO El Zapote", el fixture compartido de
-  // toda la suite de app/). Esto fue justo lo que revocó ZAP001 por error.
-  const idComunidad = await p.locator('[data-comunidad-bloque]', { hasText: NOMBRE_COMUNIDAD_PRUEBA }).getAttribute('data-comunidad-bloque');
-  const bloque = p.locator(`[data-comunidad-bloque="${idComunidad}"]`);
-  if (await bloque.locator('.codigo-mono').count()) throw new Error('la comunidad nueva trae un código');
-  // Limpieza: desactivarla, igual que probar-ubicacion-comunidad.
-  await bloque.locator('[data-mostrar-editar-comunidad]').click();
-  await bloque.locator('[data-comunidad-toggle]').click();
-  await p.waitForSelector(`[data-comunidad-bloque="${idComunidad}"] .pill:has-text("Desactivada")`, { timeout: 8000 });
+// Desde la migración 012 Configuración no tiene sección de Comunidades:
+// la comunidad no es una unidad territorial (decision-08).
+await paso('config_no_tiene_comunidades', async () => {
+  if (await p.locator('#cfg-mostrar-form-comunidad, [data-comunidad-bloque]').count()) throw new Error('sigue la sección de Comunidades');
 });
 
 console.log(JSON.stringify(s, null, 2));

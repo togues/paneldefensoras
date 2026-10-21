@@ -45,8 +45,8 @@ await p.click('.lat a[data-v="config"]');
 await p.waitForSelector('#cod-form', { timeout: 8000 });
 
 const sufijo = String(Date.now()).slice(-6);
-const frase = `Monseñor Prueba ${sufijo}`;
-const normalizado = `MONSENOR PRUEBA ${sufijo}`;
+const frase = `Señal ${sufijo}`;
+const normalizado = `SENAL ${sufijo}`;
 const creados = [];
 
 await paso('crear_una_frase_desde_el_panel', async () => {
@@ -77,7 +77,7 @@ await paso('la_app_registra_con_la_frase_escrita_distinto_y_sin_comunidad', asyn
   await a.goto('http://localhost:8902/index.html', { waitUntil: 'networkidle' });
   await a.click('[data-accion="seguir"]');
   await a.click('[data-accion="seguir"]');
-  await a.fill('#codigo-comunidad', `monsenor   prueba ${sufijo}`);
+  await a.fill('#codigo-comunidad', `senal   ${sufijo}`);
   await a.click('[data-accion="seguir"]');
   await a.waitForSelector('[data-alias]', { timeout: 6000 });
   await a.click('[data-alias]');
@@ -122,10 +122,14 @@ await paso('inventar_uno_y_darlo_de_baja', async () => {
   await p.waitForSelector(`#cod-historial .cod-item:has-text("${inventado}") .pill:has-text("Dado de baja")`, { state: 'attached', timeout: 8000 });
 });
 
-await paso('comunidades_ya_no_tienen_codigos', async () => {
-  const r = await api('/admin/comunidades');
-  if (r.cuerpo.data.comunidades.some((co) => 'codigos' in co)) throw new Error('las comunidades siguen trayendo códigos');
-  if (await p.locator('[data-generar]').count()) throw new Error('sigue el botón de generar código por comunidad');
+await paso('mas_de_20_caracteres_se_rechaza', async () => {
+  const r = await api('/admin/codigos', { method: 'POST', body: JSON.stringify({ codigo: 'SALVEMOS EL PLANETA AZUL' }) });
+  if (r.status !== 400) throw new Error('aceptó un código de más de 20 caracteres: ' + JSON.stringify(r.cuerpo));
+});
+
+await paso('configuracion_ya_no_tiene_comunidades', async () => {
+  if (await p.locator('#cfg-mostrar-form-comunidad, [data-comunidad-bloque]').count()) throw new Error('sigue la sección de Comunidades');
+  if (!(await p.locator('#cod-instructivo summary').textContent()).includes('Lea esto antes')) throw new Error('falta el instructivo');
 });
 
 // Limpieza: lo que esta prueba creó en la base local (nunca los fixtures).
@@ -138,9 +142,9 @@ if (creados.length) {
 }
 
 console.log(JSON.stringify(s, null, 2));
-// 409 (repetir la frase) y 404 (código vencido) son los rechazos que la
+// 400 (más de 20), 409 (repetir) y 404 (código vencido) son los rechazos que la
 // prueba provoca a propósito.
-const inesperados = errores.filter((e) => !/status of (409|404)/.test(e));
+const inesperados = errores.filter((e) => !/status of (400|409|404)/.test(e));
 console.log('errores de consola inesperados:', inesperados);
 const ok = Object.values(s).every(Boolean) && inesperados.length === 0;
 console.log(ok ? 'TODO OK' : 'FALLAS');
