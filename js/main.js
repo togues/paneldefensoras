@@ -19,7 +19,8 @@ const VISTAS_LISTAS = {
   analisis: () => import('./vistas/analisis.js'),
   salud: () => import('./vistas/salud.js'),
   config: () => import('./vistas/config.js'),
-  respaldos: () => import('./vistas/respaldos.js')
+  respaldos: () => import('./vistas/respaldos.js'),
+  guia: () => import('./vistas/guia.js')
 };
 const NOMBRE_VISTA = {};
 

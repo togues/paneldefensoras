@@ -505,3 +505,15 @@ button.barra.activa .bl span:first-child{font-weight:700}
 .inf-actuado{margin-top:4px;padding-left:10px;font-size:12px;color:var(--on-surface-var)}
 .inf-lista.sin-actuado .inf-actuado{display:none}
 @media (max-width:640px){.inf-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Cómo funciona (vistas/guia.js): un índice de capítulos y una caja por
+   capítulo. Texto para leer con calma: renglones más altos y un ancho de
+   lectura cómodo. */
+.guia-indice{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px 14px}
+.guia-indice a{display:flex;align-items:center;gap:10px;padding:7px 4px;color:var(--primary);font-weight:600;font-size:13px;text-decoration:none;cursor:pointer;border-radius:var(--r-s)}
+.guia-indice a:hover{background:var(--surface-1)}
+.guia-indice a span{flex:0 0 24px;height:24px;border-radius:50%;background:var(--primary-c);color:var(--on-primary-c);display:grid;place-items:center;font-size:11.5px;font-weight:700}
+.guia-cap{scroll-margin-top:16px}
+.guia-cap .sub{max-width:75ch;font-size:13.5px}
+.guia-reglas{margin:0 0 0 20px;display:flex;flex-direction:column;gap:9px;max-width:75ch}
+.guia-reglas li{font-size:13.5px;line-height:1.6;color:var(--on-surface)}
