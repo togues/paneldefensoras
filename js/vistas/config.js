@@ -230,18 +230,22 @@ function pintarComunidades(comunidades) {
           <small>${textoVigencia(c)}</small>
         </div>
         ${c.activo ? `
-          <div class="vigencia-controles">
+          <div class="cc-acciones">
+            <span class="li-a" data-copiar="${c.codigo}">Copiar</span>
+            <span class="li-a" data-extender="${c.id}">+1 semana</span>
+            <span class="li-a" data-mostrar-vigencia="${c.id}">Cambiar vigencia</span>
+            <span class="li-a peligro" data-revocar="${c.id}" data-codigo="${c.codigo}" data-otros-activos="${otrosActivos}">Revocar solo este código</span>
+          </div>
+          <div class="vigencia-controles" data-editor-vigencia="${c.id}" hidden>
             <label>Desde <input type="date" data-vig-desde="${c.id}" value="${fechaInputSV(c.vigente_desde)}"></label>
             <label>Hasta <input type="date" data-vig-hasta="${c.id}" value="${fechaInputSV(c.vigente_hasta)}"></label>
             <span class="li-a" data-guardar-vigencia="${c.id}">Guardar</span>
-            <span class="li-a" data-extender="${c.id}">+1 semana</span>
-            <span class="li-a peligro" data-revocar="${c.id}" data-codigo="${c.codigo}" data-otros-activos="${otrosActivos}">Revocar solo este código</span>
           </div>` : ''}
       </div>`;
     }).join('') || '<p class="sub2">Sin códigos todavía.</p>';
     const tipoTexto = TEXTO_TIPO_COMUNIDAD[co.tipo] || co.tipo || 'Sin tipo';
     return `
-      <div class="comunidad-card${co.activo ? '' : ' inactiva'}" data-comunidad-bloque="${co.id}">
+      <div class="comunidad-bloque${co.activo ? '' : ' inactiva'}" data-comunidad-bloque="${co.id}">
         <div class="cc-head">
           <div class="cc-id">
             <b>${co.nombre}</b>
@@ -250,8 +254,13 @@ function pintarComunidades(comunidades) {
           </div>
           <small>${co.canton || '—'} · ${co.personas_inscritas} persona${co.personas_inscritas === 1 ? '' : 's'} inscrita${co.personas_inscritas === 1 ? '' : 's'}</small>
         </div>
+        <div class="cc-acciones">
+          ${co.activo ? `<span class="li-a" data-mostrar-editar-comunidad="${co.id}">Editar</span>` : ''}
+          ${co.activo ? `<span class="li-a" data-generar="${co.id}">+ Generar código nuevo</span>` : ''}
+          <span class="li-a peligro" data-comunidad-toggle="${co.id}" data-activo="${co.activo}" data-nombre="${co.nombre}" data-codigos-activos="${codigosActivosDeLaComunidad}">${co.activo ? 'Desactivar esta comunidad' : 'Reactivar esta comunidad'}</span>
+        </div>
         ${co.activo ? `
-          <div class="cc-editar">
+          <div class="cc-editar" data-editor-comunidad="${co.id}" hidden>
             <label>Nombre <input type="text" data-com-nombre="${co.id}" value="${co.nombre}" style="width:220px"></label>
             <label>Tipo
               <select data-com-tipo="${co.id}">
@@ -260,15 +269,38 @@ function pintarComunidades(comunidades) {
             </label>
             <span class="li-a" data-guardar-comunidad="${co.id}">Guardar</span>
           </div>` : ''}
-        <div class="cc-acciones">
-          ${co.activo ? `<span class="li-a" data-generar="${co.id}">+ Generar código nuevo</span>` : ''}
-          <span class="li-a peligro" data-comunidad-toggle="${co.id}" data-activo="${co.activo}" data-nombre="${co.nombre}" data-codigos-activos="${codigosActivosDeLaComunidad}">${co.activo ? 'Desactivar esta comunidad' : 'Reactivar esta comunidad'}</span>
-        </div>
-        ${co.activo ? '<p class="cc-nota">Desactivar bloquea el enrolamiento con todos los códigos de esta comunidad, aunque sigan vigentes — se puede reactivar después. No afecta a quienes ya se enrolaron.</p>' : ''}
         <div class="codigos-lista">${codigos}</div>
       </div>`;
   }).join('') || '<p class="sub2">Ninguna comunidad calza con la búsqueda.</p>';
 
+  // Mostrar/ocultar los dos formularios de edición — nunca se
+  // vuelven a pedir datos al servidor, así que no hace falta
+  // recargar nada; solo revela lo que ya está en el DOM. Sin esto
+  // cada comunidad y cada código mostraban SIEMPRE sus campos de
+  // edición abiertos, aunque nadie los fuera a tocar — Marco lo
+  // notó comparando con una maqueta mucho más despejada, 2026-10-20.
+  document.querySelectorAll('[data-mostrar-editar-comunidad]').forEach((el) => {
+    el.addEventListener('click', () => {
+      document.querySelector(`[data-editor-comunidad="${el.dataset.mostrarEditarComunidad}"]`).hidden = false;
+    });
+  });
+  document.querySelectorAll('[data-mostrar-vigencia]').forEach((el) => {
+    el.addEventListener('click', () => {
+      document.querySelector(`[data-editor-vigencia="${el.dataset.mostrarVigencia}"]`).hidden = false;
+    });
+  });
+  document.querySelectorAll('[data-copiar]').forEach((el) => {
+    el.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(el.dataset.copiar);
+        const original = el.textContent;
+        el.textContent = '¡Copiado!';
+        setTimeout(() => { el.textContent = original; }, 1200);
+      } catch {
+        alert('No se pudo copiar — el código es: ' + el.dataset.copiar);
+      }
+    });
+  });
   document.querySelectorAll('[data-revocar]').forEach((el) => {
     el.addEventListener('click', async () => {
       const otros = Number(el.dataset.otrosActivos);

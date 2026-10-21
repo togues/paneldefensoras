@@ -61,6 +61,9 @@ await paso('fijar_ventana_ya_vencida', async () => {
   const fechaAyer = new Date(hoySV + 'T00:00:00Z');
   fechaAyer.setUTCDate(fechaAyer.getUTCDate() - 1);
   const ayer = fechaAyer.toISOString().slice(0, 10);
+  // El editor de vigencia empieza oculto (Marco pidió despejar la
+  // pantalla, 2026-10-20) — hay que pedirlo antes de poder llenarlo.
+  await p.click(`[data-mostrar-vigencia="${idCodigo}"]`);
   await p.fill(`[data-vig-desde="${idCodigo}"]`, ayer);
   await p.fill(`[data-vig-hasta="${idCodigo}"]`, ayer);
   await p.click(`[data-guardar-vigencia="${idCodigo}"]`);
@@ -86,6 +89,7 @@ await paso('la_app_rechaza_el_codigo_vencido_de_verdad', async () => {
 
 await paso('fijar_ventana_vigente_hoy_y_confirmar_hora_exacta_en_el_servidor', async () => {
   const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
+  await p.click(`[data-mostrar-vigencia="${idCodigo}"]`);
   await p.fill(`[data-vig-desde="${idCodigo}"]`, hoy);
   await p.fill(`[data-vig-hasta="${idCodigo}"]`, hoy);
   await p.click(`[data-guardar-vigencia="${idCodigo}"]`);

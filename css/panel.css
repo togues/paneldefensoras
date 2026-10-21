@@ -64,7 +64,17 @@ body{font-family:var(--sans);background:var(--surface-1);color:var(--on-surface)
 .acciones{display:flex;gap:9px;flex-wrap:wrap}
 .btn{background:var(--primary);color:#fff;padding:11px 17px;border-radius:var(--r-full);font-size:13.5px;
   font-weight:700;cursor:pointer;border:none;font-family:var(--sans);box-shadow:var(--e1);white-space:nowrap}
+.btn:hover{filter:brightness(.96)}
 .btn:active{transform:scale(.98)}
+/* Antes nada en el panel marcaba el foco de teclado — Tab llevaba el
+   cursor de un control a otro sin ninguna señal visual de cuál tenía
+   el foco. Solo en elementos realmente enfocables con teclado
+   (botones, <input>, <select>): .filtro, .li-a y el resto de
+   "botones" hechos con <div>/<span> sin tabindex ni rol no reciben
+   Tab en absoluto, así que ponerles este mismo outline sería
+   decorativo y mentiría sobre que ya son accesibles — eso queda
+   pendiente como tarea aparte, no se resuelve solo con CSS. */
+.btn:focus-visible,.campo-filtro:focus-visible{outline:3px solid var(--primary-c);outline-offset:2px}
 .btn.ghost{background:var(--surface);color:var(--primary);border:1.5px solid var(--outline-var);box-shadow:none}
 .btn.chico{padding:8px 13px;font-size:12.5px}
 .btn.peligro{background:var(--error)}
@@ -179,28 +189,34 @@ tbody tr:hover{background:var(--surface-1)}
 .li-a.peligro{color:var(--error)}
 .codigo-mono{font-family:Consolas,Monaco,monospace;font-weight:700;color:var(--primary);letter-spacing:.06em}
 .vigencia-controles{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.vigencia-controles[hidden],.cc-editar[hidden]{display:none}
 .vigencia-controles label{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--on-surface-var)}
 .vigencia-controles input[type="date"]{border:1px solid var(--outline-var);border-radius:6px;padding:3px 6px;font-size:12px;font-family:inherit}
 
-/* Comunidades: tarjeta por comunidad con sus códigos anidados adentro
-   — antes eran todos divs .lista-item al mismo nivel visual, y
-   "Desactivar" (la comunidad entera) y "Revocar" (un solo código) se
-   veían como dos enlaces iguales uno al lado del otro. La tarjeta y el
-   borde izquierdo de .codigos-lista existen para que se note, de un
-   vistazo, que los códigos viven DENTRO de la comunidad y que
-   desactivar esta última los arrastra a todos (Marco se confundió
-   justo con esto al ver la pantalla en vivo, 2026-10-20). */
-.comunidad-card{border:1px solid var(--outline-var);border-radius:var(--r-m);padding:14px 16px;margin-bottom:12px}
-.comunidad-card.inactiva{opacity:.6}
+/* Comunidades: separadas por un solo borde inferior, como cualquier
+   .lista-item del resto del panel — nada de caja dentro de caja
+   dentro de caja. La primera versión le ponía borde propio a la
+   tarjeta de la comunidad Y un borde izquierdo a sus códigos Y borde
+   a cada <input type=date> siempre visible: hasta cuatro bordes
+   compitiendo a la vez. Marco lo notó comparando contra una maqueta
+   mucho más despejada (2026-10-20) — la jerarquía ahora la da la
+   tipografía y el espacio, no líneas: título en negrita, metadatos en
+   gris chico, acciones agrupadas debajo de lo que afectan. Los
+   formularios de editar nombre/tipo y de cambiar vigencia empiezan
+   ocultos (`hidden`) y solo aparecen al pedirlos — antes estaban
+   siempre abiertos para cada comunidad y cada código, aunque nadie
+   los fuera a tocar. */
+.comunidad-bloque{padding:18px 0;border-bottom:1px solid var(--outline-var)}
+.comunidad-bloque:last-child{border-bottom:0}
+.comunidad-bloque.inactiva{opacity:.6}
 .cc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .cc-head .cc-id{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cc-head b{font-size:14px}
 .cc-head small{font-size:11.5px;color:var(--on-surface-var)}
 .cc-editar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--on-surface-var)}
 .cc-editar input,.cc-editar select{border:1px solid var(--outline-var);border-radius:6px;padding:4px 7px;font-size:12px;font-family:inherit}
-.cc-acciones{display:flex;align-items:center;gap:14px;margin-top:10px}
-.cc-nota{font-size:11px;color:var(--on-surface-var);margin-top:4px;max-width:520px}
-.codigos-lista{border-left:3px solid var(--outline-var);padding-left:14px;margin-top:12px;display:flex;flex-direction:column;gap:12px}
+.cc-acciones{display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap}
+.codigos-lista{margin-top:14px;padding-left:4px;display:flex;flex-direction:column;gap:14px}
 .codigo-row .li-t{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .codigo-row .li-t small{display:block;width:100%;font-size:11.5px;color:var(--on-surface-var);margin-top:2px}
 
