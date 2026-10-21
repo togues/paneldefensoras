@@ -10,6 +10,7 @@ import { log } from './core/logger.js';
 import { cerrarSesion } from './data/api-client.js';
 import * as sesion from './data/sesion.js';
 import { montar as montarLogin } from './pantalla-login.js';
+import { iniciarVisita, ofrecerVisitaSiEsPrimeraVez } from './core/visita-guiada.js';
 
 const VISTAS_LISTAS = {
   resumen: () => import('./vistas/resumen.js'),
@@ -96,6 +97,9 @@ function enlazarNav() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
+  const visita = document.querySelector('.lat [data-visita]');
+  visita.addEventListener('click', () => iniciarVisita(irAVista));
+  visita.addEventListener('keydown', (e) => { if (e.key === 'Enter') iniciarVisita(irAVista); });
 }
 
 function mostrarShell() {
@@ -109,7 +113,7 @@ function mostrarShell() {
   document.querySelectorAll('.lat [data-solo-admin]').forEach((a) => { a.hidden = !esAdmin; });
   enlazarNav();
   pintarUsuarioPie();
-  montarVista('resumen');
+  montarVista('resumen').then(() => ofrecerVisitaSiEsPrimeraVez(irAVista));
 }
 
 function mostrarLogin() {

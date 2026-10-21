@@ -587,3 +587,26 @@ button.barra.activa .bl span:first-child{font-weight:700}
   .ciclo-disco{height:36px;padding:8px}
   .ciclo-etapa,.ciclo-control{gap:10px}
 }
+
+/* Visita guiada (core/visita-guiada.js) */
+.vg-capa{position:fixed;inset:0;z-index:200}
+.vg-capa:has(.vg-foco[hidden]){background:rgba(10,29,26,.55)}
+.vg-foco{position:fixed;border-radius:var(--r-m);box-shadow:0 0 0 9999px rgba(10,29,26,.55),0 0 0 3px #56C1A9 inset;
+  transition:left .25s,top .25s,width .25s,height .25s;pointer-events:none}
+.vg-foco[hidden]{display:none}
+.vg-tarjeta{position:fixed;background:var(--surface);border-radius:var(--r-m);padding:18px 18px 14px;
+  box-shadow:0 18px 50px rgba(0,0,0,.3);transition:left .25s,top .25s;outline:none}
+.vg-barra{height:4px;background:var(--surface-2);border-radius:2px;overflow:hidden;margin-bottom:12px}
+.vg-barra i{display:block;height:100%;background:var(--primary);transition:width .25s}
+.vg-contador{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--on-surface-var)}
+.vg-titulo{font-size:18px;margin:4px 0 6px}
+.vg-texto{font-size:14px;line-height:1.55;color:var(--on-surface)}
+.vg-acciones{display:flex;gap:8px;align-items:center;margin-top:14px}
+.vg-acciones span{flex:1}
+.lat a[data-visita]{cursor:pointer}
+@media (prefers-reduced-motion:reduce){.vg-foco,.vg-tarjeta,.vg-barra i{transition:none}}
+.vg-aviso{position:fixed;right:20px;bottom:20px;z-index:150;width:min(330px,calc(100% - 40px));background:var(--surface);
+  border-left:5px solid var(--primary);border-radius:var(--r-m);padding:14px 16px;box-shadow:0 12px 34px rgba(0,0,0,.22)}
+.vg-aviso b{font-size:14.5px}
+.vg-aviso p{font-size:13px;color:var(--on-surface-var);margin:4px 0 10px}
+.vg-aviso div{display:flex;gap:8px;justify-content:flex-end}
