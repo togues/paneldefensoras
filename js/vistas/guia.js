@@ -11,6 +11,118 @@
 
 const REVISADO = '21 de octubre de 2026';
 
+// Ciclo de vida de un reporte, de la cuenta al muro. Cada etapa usa un
+// color del muro público; entre etapas van los controles que hay que
+// pasar. Verificado contra el código el 21 de octubre de 2026.
+const ETAPAS = [
+  {
+    color: 'naranja', icono: 'persona', quien: 'La persona, en la app',
+    titulo: '1. Crea su cuenta',
+    pasos: [
+      'Escribe el código de registro que le dio el equipo (por ejemplo, CEIBA).',
+      'Elige un alias de una lista. No escribe su nombre: no hay dónde guardarlo.',
+      'Si quiere, dice su sexo, su departamento y su organización. Solo sirven para contar participación en grupos de 5 o más.',
+      'Recibe su código de recuperación. Es lo único que recupera la cuenta.',
+    ],
+  },
+  {
+    control: 'Para entrar',
+    reglas: ['El código de registro tiene que estar vigente', '5 registros por hora desde una misma conexión'],
+  },
+  {
+    color: 'azul', icono: 'telefono', quien: 'La persona, en la app',
+    titulo: '2. Reporta un hecho',
+    pasos: [
+      'Elige la categoría y el tipo de hecho.',
+      '¿Dónde fue?: el departamento, y si quiere un punto en el mapa y una seña del lugar.',
+      'Cuándo ocurrió y qué pasó, escrito o dictado. No se graba la voz.',
+      'Hasta 5 fotos. El teléfono les borra los datos ocultos (modelo, fecha, GPS).',
+      'Todo queda cifrado en el teléfono. Sin señal, espera y se envía solo cuando vuelve.',
+    ],
+  },
+  {
+    control: 'Antes de enviar',
+    reglas: ['Filtro de la app: con partidos, figuras políticas o pandillas no deja enviar', 'Con "gobierno" o "alcalde" solo avisa'],
+  },
+  {
+    color: 'negro', icono: 'servidor', quien: 'El servidor, solo',
+    titulo: '3. Llega al observatorio',
+    pasos: [
+      'Comprueba que viene de la app y de un teléfono registrado.',
+      'Si el teléfono lo envía dos veces, se guarda una sola.',
+      'Vuelve a revisar las fotos y rechaza la que todavía tenga datos ocultos.',
+      'Le pone folio con el código del departamento (SV11-2026-0008) y lo deja en Recibido.',
+      'Prioridad alta si el tipo de hecho es grave; media en los demás.',
+    ],
+  },
+  {
+    control: 'Segunda revisión',
+    reglas: ['El filtro corre otra vez: lo que pasó se marca como anómalo, nunca se borra', 'Nadie recibe avisos automáticos'],
+  },
+  {
+    color: 'ambar', icono: 'panel', quien: 'El equipo, en el panel (cualquier rol)',
+    titulo: '4. Se revisa y se acompaña',
+    pasos: [
+      'Cambia el estado: Recibido, En investigación, Cerrado o Descartado (descartar exige el motivo).',
+      'Anota lo actuado y asigna la organización de seguimiento. Todo queda en la bitácora con quién y cuándo.',
+      'Salud de datos señala lo que conviene mirar: duplicados, fechas imposibles, casos sin atender.',
+      'Lo que contó la persona nunca se edita: queda como evidencia.',
+    ],
+  },
+  {
+    control: 'Para publicar',
+    reglas: [
+      'Solo el rol administrador publica',
+      'El texto arranca con el relato: se corrige y se quita todo lo que identifique a alguien',
+      'Filtro estricto del muro: "dictadura", partidos o figuras políticas no dejan publicar',
+      'Teléfonos, correos, "régimen de excepción" o "ministro" piden confirmar que se revisó',
+    ],
+  },
+  {
+    color: 'verde', icono: 'muro', quien: 'Cualquier persona, en internet',
+    titulo: '5. Sale en el muro público',
+    pasos: [
+      'Se ve el tipo de hecho, la categoría, el cantón o el departamento, el mes y el año, y el texto revisado.',
+      'Se puede leer completo, compartir y bajar en ficha PDF.',
+      'El texto se puede corregir después desde el panel; queda en la bitácora.',
+    ],
+    nunca: 'Nunca sale: el alias, el folio, la comunidad, el punto exacto, las fotos, el relato original ni nada de quién reportó.',
+  },
+];
+
+const ICONOS_CICLO = {
+  persona: '<circle cx="12" cy="7.6" r="3.8"/><path d="M5 20.4a7 7 0 0 1 14 0"/>',
+  telefono: '<rect x="6.5" y="2.8" width="11" height="18.4" rx="2.2"/><path d="M10.5 17.6h3"/>',
+  servidor: '<rect x="4" y="4" width="16" height="6.4" rx="1.6"/><rect x="4" y="13.6" width="16" height="6.4" rx="1.6"/><path d="M7.6 7.2h.01M7.6 16.8h.01"/>',
+  panel: '<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M8 9h8M8 13h5"/>',
+  muro: '<circle cx="12" cy="12" r="8.8"/><path d="M3.2 12h17.6M12 3.2c2.4 2.6 3.6 5.5 3.6 8.8s-1.2 6.2-3.6 8.8c-2.4-2.6-3.6-5.5-3.6-8.8s1.2-6.2 3.6-8.8z"/>',
+};
+
+function diagramaCiclo() {
+  const etapa = (e) => `
+    <li class="ciclo-etapa" data-color="${e.color}">
+      <span class="ciclo-disco" aria-hidden="true"><svg viewBox="0 0 24 24">${ICONOS_CICLO[e.icono]}</svg></span>
+      <div class="ciclo-tarjeta">
+        <span class="ciclo-quien">${e.quien}</span>
+        <h3>${e.titulo}</h3>
+        <ul>${e.pasos.map((x) => `<li>${x}</li>`).join('')}</ul>
+        ${e.nunca ? `<p class="ciclo-nunca">${e.nunca}</p>` : ''}
+      </div>
+    </li>`;
+  const control = (c) => `
+    <li class="ciclo-control">
+      <span class="ciclo-rombo" aria-hidden="true"></span>
+      <div><b>Control · ${c.control}</b><ul>${c.reglas.map((x) => `<li>${x}</li>`).join('')}</ul></div>
+    </li>`;
+  return `
+    <section class="caja guia-cap" id="guia-ciclo">
+      <h2>Del registro al muro: el recorrido de un reporte</h2>
+      <p class="sub">Cinco etapas, con los controles que hay que pasar entre una y otra. Un reporte puede quedarse en la etapa 4 para siempre: publicar es una decisión, no un paso obligatorio.</p>
+      <div class="ciclo-franja" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <ol class="ciclo">${ETAPAS.map((x) => (x.control ? control(x) : etapa(x))).join('')}</ol>
+    </section>`;
+}
+
 const CAPITULOS = [
   {
     id: 'anonimato',
@@ -189,8 +301,10 @@ export function montar(raiz) {
   raiz.innerHTML = `
     <div class="head"><div><h1>Cómo funciona</h1><p>Las reglas del observatorio, para consultar cuando haga falta. Revisado el ${REVISADO}.</p></div></div>
     <nav class="caja guia-indice" aria-label="Capítulos">
+      <a href="#guia-ciclo" data-ir="ciclo"><span>0</span>Del registro al muro</a>
       ${CAPITULOS.map((c, i) => `<a href="#guia-${c.id}" data-ir="${c.id}"><span>${i + 1}</span>${c.titulo}</a>`).join('')}
     </nav>
+    ${diagramaCiclo()}
     ${CAPITULOS.map(capitulo).join('')}`;
 
   // El enrutado del panel no usa el hash: se desplaza a mano para no
