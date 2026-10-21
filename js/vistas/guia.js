@@ -106,7 +106,7 @@ const CAPITULOS = [
     reglas: [
       'Nada se publica solo: cada publicación la aprueba una persona con rol administrador.',
       'El texto para el muro arranca con el relato de la persona. El administrador corrige la ortografía, quita nombres, caseríos, teléfonos o cualquier dato que identifique a alguien, y puede agregar líneas. El relato original no cambia: queda como evidencia.',
-      'Antes de publicar, el filtro revisa el texto: con partidos, figuras políticas o pandillas (también escritos como "buk3l3") no deja publicar; con palabras como "gobierno", "alcalde", un teléfono o un correo pide confirmar que se revisó.',
+      'Antes de publicar, el filtro revisa el texto con una lista más estricta que la de la app: con partidos, figuras políticas, pandillas o palabras como "dictadura", "tiranía" o "presos políticos" (también escritas "D1CTADURA" o "d.i.c.t.a.d.u.r.a") no deja publicar; con "régimen de excepción", "gobierno", "ministro", "elecciones", un teléfono o un correo pide confirmar que se revisó.',
       'El muro muestra el tipo de hecho, el cantón, el departamento, el mes y el año, y el texto revisado. Nunca muestra la comunidad, el punto exacto ni las fotos.',
       'El texto de un caso ya publicado se puede corregir desde su ficha; el cambio queda en la bitácora. Todavía no hay forma de quitar un caso del muro.',
     ],
