@@ -51,7 +51,7 @@ const CONTENIDOS = {
     overline: 'Ayuda · Gestionar un caso',
     titulo: '¿Qué hago al abrir un caso?',
     texto: 'Vea el relato y la evidencia tal como se enviaron — el relato original nunca se edita, ni acá ni en ningún lado. Cambie el estado según en qué va el caso, y agregue una nota si hace falta dejar constancia de una decisión.',
-    lista: ['Descartar exige una nota: es el motivo por el que alguien más, después, va a entender por qué se cerró así.', 'Publicar reescribe un resumen para el muro público — nunca puede quedar igual al relato original.']
+    lista: ['Descartar exige una nota: es el motivo por el que alguien más, después, va a entender por qué se cerró así.', 'Publicar parte del relato: corrija la ortografía y quite todo lo que identifique a alguien. El relato original no cambia.']
   },
   'casos-exportar': {
     overline: 'Ayuda · Exportar',

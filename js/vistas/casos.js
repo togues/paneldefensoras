@@ -25,6 +25,7 @@ import { obtenerCasos, obtenerCaso, obtenerCatalogos, actualizarCaso, publicarCa
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
 import { cargarLeaflet } from '../core/cargador-librerias.js';
+import { esc } from '../core/graficas.js';
 
 const ETIQ_ESTADO = { recibido: 'Sin revisar', en_investigacion: 'En investigación', cerrado: 'Cerrado', descartado: 'Descartado' };
 const CLASE_ESTADO = { recibido: 'p-n', en_investigacion: 'p-i', cerrado: 'p-c', descartado: 'p-i' };
@@ -525,17 +526,24 @@ async function abrirDetalle(id) {
   const usuario = sesion.usuarioActual();
   const esAdministrador = usuario?.rol === 'administrador';
 
-  const publicarBloque = c.publicado
-    ? '<div class="caja"><h2>Muro público</h2><p class="sub2">Este caso ya está publicado.</p></div>'
-    : esAdministrador
-      ? `<div class="caja">
-          <h2>Publicar al muro público</h2>
-          <p class="sub2">El resumen lo redacta REDNA, nunca es el relato original.</p>
-          <textarea class="campo" id="c-resumen-publico" placeholder="Resumen para el muro público…"></textarea>
-          <div id="c-publicar-error" style="display:none;padding:8px 0" class="error-carga"></div>
-          <button class="btn ghost" style="width:100%" id="c-publicar">Publicar</button>
-        </div>`
-      : '<div class="caja"><h2>Muro público</h2><p class="sub2">Publicar requiere rol administrador.</p></div>';
+  // Decisión 09: el texto del muro arranca con el relato de la persona y
+  // el administrador lo corrige. reporte.descripcion no cambia (regla 6).
+  const textoMuro = c.publicado ? (c.resumen_publico || '') : (c.descripcion || '');
+  const publicarBloque = esAdministrador
+    ? `<div class="caja">
+        <h2>${c.publicado ? 'Texto publicado en el muro' : 'Publicar al muro público'}</h2>
+        <p class="sub2">${c.publicado
+          ? 'Este caso ya está en el muro. Puede corregir el texto: el cambio se ve en el muro al guardarlo y queda en la bitácora.'
+          : 'Arranca con el relato de la persona. Corrija la ortografía, quite nombres, caseríos, teléfonos o cualquier dato que identifique a alguien, y agregue lo que haga falta. El relato original de arriba no cambia: queda como evidencia.'}</p>
+        <textarea class="campo campo-muro" id="c-resumen-publico" rows="8" placeholder="Texto para el muro público…">${esc(textoMuro)}</textarea>
+        <div id="c-revision" class="revision-muro" aria-live="polite"></div>
+        <div id="c-publicar-error" style="display:none;padding:8px 0" class="error-carga"></div>
+        <div class="acciones-muro">
+          <button class="btn ghost" type="button" id="c-revisar">Revisar texto</button>
+          <button class="btn" type="button" id="c-publicar">${c.publicado ? 'Guardar texto publicado' : 'Publicar'}</button>
+        </div>
+      </div>`
+    : `<div class="caja"><h2>Muro público</h2><p class="sub2">${c.publicado ? 'Este caso ya está publicado.' : 'Publicar requiere rol administrador.'}</p></div>`;
 
   detalle.innerHTML = `
     <div class="det-head">
@@ -546,7 +554,7 @@ async function abrirDetalle(id) {
       <div>
         <div class="caja" style="margin-bottom:14px">
           <h2>Lo que se reportó</h2>
-          <div class="relato">"${c.descripcion || 'Sin descripción.'}"</div>
+          <div class="relato">"${esc(c.descripcion || 'Sin descripción.')}"</div>
           <div class="dato"><b>Tipo de hecho</b><span>${c.tipo_hecho}</span></div>
           <div class="dato"><b>Cuándo ocurrió</b><span>${c.fecha_incidente ? formatoFechaLarga(c.fecha_incidente) : 'Sin precisar'}</span></div>
           <div class="dato"><b>Comunidad</b><span>${c.comunidad || '—'}</span></div>
@@ -578,7 +586,7 @@ async function abrirDetalle(id) {
         </div>
         ${publicarBloque}
         <div class="caja"><h2>Bitácora</h2>${bitacora}</div>
-        <p class="sub2" style="margin-top:14px">El relato original nunca se edita. Toda interpretación va en las notas de seguimiento, para conservar el valor probatorio del registro.</p>
+        <p class="sub2" style="margin-top:14px">El relato original nunca se edita: conserva su valor probatorio. Lo que se corrige es la versión para el muro, aparte.</p>
       </div>
     </div>`;
 
@@ -634,30 +642,76 @@ async function abrirDetalle(id) {
     alCambiarDetalle(); // refleja el cambio de fondo sin cerrar el detalle
   });
 
-  document.getElementById('c-publicar')?.addEventListener('click', async () => {
-    const boton = document.getElementById('c-publicar');
-    const error = document.getElementById('c-publicar-error');
-    const resumen = document.getElementById('c-resumen-publico').value.trim();
+  enlazarPublicar(id, c.publicado);
+}
+
+const NOMBRE_CATEGORIA = { politico: 'político', seguridad: 'pandillas o violencia', contacto: 'dato de contacto' };
+
+function pintarRevision(cont, r) {
+  const lista = (items) => items.map((h) => `<li><b>${esc(h.termino)}</b> · ${NOMBRE_CATEGORIA[h.categoria] || esc(h.categoria)}</li>`).join('');
+  if (!r.bloqueos.length && !r.advertencias.length) {
+    cont.innerHTML = '<p class="revision-ok">El filtro no encontró menciones políticas, de pandillas ni datos de contacto. Igual léalo completo antes de publicar.</p>';
+    return;
+  }
+  cont.innerHTML = `
+    ${r.bloqueos.length ? `<div class="revision-bloqueo"><p>Hay que quitar esto antes de publicar:</p><ul>${lista(r.bloqueos)}</ul></div>` : ''}
+    ${r.advertencias.length ? `<div class="revision-aviso"><p>Revise si esto puede quedar en público:</p><ul>${lista(r.advertencias)}</ul>
+      <label class="revision-confirmar"><input type="checkbox" id="c-advertencias-ok"> Lo revisé y puede publicarse así</label></div>` : ''}`;
+}
+
+function enlazarPublicar(id, yaPublicado) {
+  const boton = document.getElementById('c-publicar');
+  if (!boton) return;
+  const campo = document.getElementById('c-resumen-publico');
+  const revision = document.getElementById('c-revision');
+  const error = document.getElementById('c-publicar-error');
+  const etiqueta = boton.textContent;
+
+  const mostrarError = (texto) => {
+    error.textContent = texto;
+    error.style.display = 'block';
+  };
+
+  async function revisar() {
     error.style.display = 'none';
-
-    if (!resumen) {
-      error.textContent = 'El resumen no puede quedar vacío.';
-      error.style.display = 'block';
-      return;
+    const texto = campo.value.trim();
+    if (!texto) {
+      mostrarError('El texto para el muro no puede quedar vacío.');
+      return null;
     }
-
-    boton.disabled = true;
-    boton.textContent = 'Publicando…';
-    const r = await publicarCaso(id, resumen);
-    boton.disabled = false;
-    boton.textContent = 'Publicar';
-
+    const r = await publicarCaso(id, texto, { solo_revisar: true });
     if (!r.ok) {
-      error.textContent = r.error;
-      error.style.display = 'block';
+      mostrarError(r.error);
+      return null;
+    }
+    pintarRevision(revision, r.data);
+    return r.data;
+  }
+
+  campo.addEventListener('input', () => { revision.innerHTML = ''; });
+  document.getElementById('c-revisar').addEventListener('click', revisar);
+
+  boton.addEventListener('click', async () => {
+    boton.disabled = true;
+    boton.textContent = 'Revisando…';
+    const hallado = await revisar();
+    const confirmadas = document.getElementById('c-advertencias-ok')?.checked === true;
+    if (!hallado || hallado.bloqueos.length || (hallado.advertencias.length && !confirmadas)) {
+      if (hallado?.bloqueos.length) mostrarError('El texto tiene menciones que no pueden ir al muro.');
+      else if (hallado?.advertencias.length) mostrarError('Marque "Lo revisé y puede publicarse así" o corrija el texto.');
+      boton.disabled = false;
+      boton.textContent = etiqueta;
       return;
     }
 
+    boton.textContent = yaPublicado ? 'Guardando…' : 'Publicando…';
+    const r = await publicarCaso(id, campo.value.trim(), { advertencias_revisadas: confirmadas });
+    boton.disabled = false;
+    boton.textContent = etiqueta;
+    if (!r.ok) {
+      mostrarError(r.error);
+      return;
+    }
     await refrescarDetalleSiSigueAbierto(id);
     alCambiarDetalle();
   });

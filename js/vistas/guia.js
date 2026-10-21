@@ -105,9 +105,10 @@ const CAPITULOS = [
     intro: 'El muro muestra hacia afuera lo que REDNA decide hacer público.',
     reglas: [
       'Nada se publica solo: cada publicación la aprueba una persona con rol administrador.',
-      'El texto publicado lo redacta REDNA y tiene que ser distinto de lo que contó la persona. El relato original nunca se publica.',
-      'El muro muestra el tipo de hecho, el cantón, el departamento, y el mes y el año. Nunca muestra el relato, la comunidad, el punto exacto ni las fotos.',
-      'Hoy no hay forma de quitar algo del muro desde el panel una vez publicado. Antes de publicar, revise bien el texto.',
+      'El texto para el muro arranca con el relato de la persona. El administrador corrige la ortografía, quita nombres, caseríos, teléfonos o cualquier dato que identifique a alguien, y puede agregar líneas. El relato original no cambia: queda como evidencia.',
+      'Antes de publicar, el filtro revisa el texto: con partidos, figuras políticas o pandillas (también escritos como "buk3l3") no deja publicar; con palabras como "gobierno", "alcalde", un teléfono o un correo pide confirmar que se revisó.',
+      'El muro muestra el tipo de hecho, el cantón, el departamento, el mes y el año, y el texto revisado. Nunca muestra la comunidad, el punto exacto ni las fotos.',
+      'El texto de un caso ya publicado se puede corregir desde su ficha; el cambio queda en la bitácora. Todavía no hay forma de quitar un caso del muro.',
     ],
   },
   {

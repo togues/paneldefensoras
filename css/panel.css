@@ -539,3 +539,15 @@ button.barra.activa .bl span:first-child{font-weight:700}
 .cal-tabla{overflow-x:auto}
 .cal-tabla tbody tr{cursor:pointer}
 .cal-tabla tbody tr:hover{background:var(--surface)}
+
+/* Texto para el muro (decisión 09): revisión del filtro antes de publicar */
+.campo-muro{min-height:170px;resize:vertical;line-height:1.55}
+.revision-muro{margin-top:10px;font-size:13px}
+.revision-muro:empty{display:none}
+.revision-muro ul{margin:6px 0 0 18px}
+.revision-ok{color:var(--ok);background:var(--ok-c);border-radius:var(--r-s);padding:10px 12px}
+.revision-bloqueo{color:var(--error);background:var(--error-c);border-radius:var(--r-s);padding:10px 12px;margin-bottom:8px}
+.revision-aviso{color:var(--warn);background:var(--warn-c);border-radius:var(--r-s);padding:10px 12px}
+.revision-confirmar{display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--on-surface);font-weight:600;cursor:pointer}
+.acciones-muro{display:flex;gap:8px;margin-top:12px}
+.acciones-muro .btn{flex:1}

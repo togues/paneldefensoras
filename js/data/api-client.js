@@ -98,8 +98,8 @@ export function obtenerInforme(filtros = {}) {
   return pedir('/admin/informe?' + params.toString());
 }
 
-export function publicarCaso(id, resumenPublico) {
-  return pedir('/admin/casos/' + encodeURIComponent(id) + '/publicar', { method: 'POST', body: { resumen_publico: resumenPublico } });
+export function publicarCaso(id, resumenPublico, opciones = {}) {
+  return pedir('/admin/casos/' + encodeURIComponent(id) + '/publicar', { method: 'POST', body: { resumen_publico: resumenPublico, ...opciones } });
 }
 
 // Reutiliza /catalogos (el mismo endpoint de la app comunitaria) para
