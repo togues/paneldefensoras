@@ -29,10 +29,9 @@ await p.waitForSelector('#app-shell:not([hidden])', { timeout: 8000 });
 await p.click('.lat a[data-v="mapa"]');
 
 await paso('mapa_carga_y_muestra_resumen_real', async () => {
-  await p.waitForSelector('#m-resumen', { timeout: 8000 });
-  await p.waitForFunction(() => document.getElementById('m-resumen')?.textContent?.includes('reportes georreferenciados'), { timeout: 8000 });
+  await p.waitForFunction(() => document.getElementById('m-resumen')?.textContent?.includes('casos con ubicación'), { timeout: 15000 });
   const texto = await p.locator('#m-resumen').textContent();
-  if (!/^\d+ reportes georreferenciados/.test(texto.trim())) throw new Error('resumen inesperado: ' + texto);
+  if (!/^\d+ casos con ubicación/.test(texto.trim())) throw new Error('resumen inesperado: ' + texto);
 });
 
 await paso('leaflet_esta_cargado_y_el_mapa_existe', async () => {
@@ -40,34 +39,75 @@ await paso('leaflet_esta_cargado_y_el_mapa_existe', async () => {
   if (!ok) throw new Error('Leaflet no inicializó el mapa');
 });
 
-// Los reportes de demo comparten el mismo centro de comunidad (varios
-// caen en la misma coordenada a propósito — regla 5), así que a este
-// zoom Leaflet.markercluster los agrupa en burbujas (.marker-cluster,
-// un ícono) en vez de mostrar un <path> por punto. Cuentan los dos.
+// Los racimos (.m-racimo) son un ícono; los puntos sueltos, un <path>.
 function contarPuntos(p) {
   return p.evaluate(() => document.querySelectorAll('#r-mapa .leaflet-marker-icon, #r-mapa path.leaflet-interactive').length);
 }
+const cuenta = async () => Number((await p.textContent('#m-cuenta')).match(/^(\d+)/)[1]);
 
-await paso('hay_marcadores_o_clusters_dibujados', async () => {
-  await p.waitForTimeout(500); // fitBounds + animación
-  const cantidad = await contarPuntos(p);
-  if (cantidad === 0) throw new Error('no se dibujó ningún marcador ni cluster en el mapa');
+await paso('hay_marcadores_o_racimos_dibujados', async () => {
+  await p.waitForTimeout(800);
+  if ((await contarPuntos(p)) === 0) throw new Error('no se dibujó ningún marcador ni racimo');
 });
 
-await paso('filtro_contra_personas_reduce_los_puntos', async () => {
-  const antes = await contarPuntos(p);
-  await p.click('.filtro[data-f="persona"]');
+await paso('filtro_contra_personas_reduce_los_casos', async () => {
+  const antes = await cuenta();
+  await p.click('.m-fam[data-fam="persona"]');
   await p.waitForTimeout(400);
-  const despues = await contarPuntos(p);
-  if (despues === 0) throw new Error('el filtro "contra personas" dejó el mapa sin puntos');
-  if (despues > antes) throw new Error('filtrar debería reducir o igualar los puntos, no aumentarlos: antes=' + antes + ' despues=' + despues);
+  const despues = await cuenta();
+  if (despues === 0 || despues > antes) throw new Error(`antes=${antes} despues=${despues}`);
+  const enChip = Number(await p.textContent('[data-cuenta="persona"]'));
+  if (enChip !== despues) throw new Error(`el chip dice ${enChip} y el mapa ${despues}`);
 });
 
-await paso('filtro_todos_los_hechos_vuelve_a_mostrar_todo', async () => {
-  await p.click('.filtro[data-f="todos"]');
+await paso('quitar_filtros_vuelve_a_mostrar_todo', async () => {
+  await p.click('#m-limpiar');
   await p.waitForTimeout(400);
-  const cantidad = await contarPuntos(p);
-  if (cantidad === 0) throw new Error('volver a "todos" dejó el mapa vacío');
+  const texto = await p.textContent('#m-cuenta');
+  const [, n, total] = texto.match(/^(\d+) de (\d+)/);
+  if (n !== total) throw new Error('quedó filtrado: ' + texto);
+});
+
+await paso('linea_de_tiempo_recorta_y_play_llega_al_final', async () => {
+  const total = await cuenta();
+  await p.click('.m-barra[data-bin]:not(:empty)');
+  await p.waitForTimeout(300);
+  if ((await cuenta()) >= total) throw new Error('tocar una barra no recortó el periodo');
+  await p.click('#m-todo');
+  await p.click('#m-play');
+  await p.waitForFunction((t) => document.getElementById('m-cuenta').textContent.startsWith(t + ' de'), total, { timeout: 15000 });
+});
+
+await paso('ficha_emergente_con_coordenada_y_abrir_caso', async () => {
+  await p.evaluate(() => {
+    const capa = Object.values(window.L ? document.getElementById('r-mapa') : {}).length;
+    return capa;
+  });
+  const punto = p.locator('#r-mapa path.leaflet-interactive').first();
+  if (await punto.count()) {
+    await punto.click({ force: true });
+  } else {
+    await p.locator('.m-racimo').first().click();
+    await p.waitForTimeout(800);
+    await p.locator('#r-mapa path.leaflet-interactive').first().click({ force: true });
+  }
+  await p.waitForSelector('.m-pop [data-abrir]', { timeout: 4000 });
+  const coord = await p.textContent('.m-pop code');
+  if (!/^-?\d+\.\d{5}, -?\d+\.\d{5}$/.test(coord.trim())) throw new Error('coordenada rara: ' + coord);
+});
+
+await paso('la_regla_mide_una_distancia', async () => {
+  await p.click('.leaflet-popup-close-button').catch(() => {});
+  await p.click('.m-herr a');
+  await p.waitForTimeout(400); // la ficha abierta se cierra con un fundido
+  const caja = await p.locator('#r-mapa').boundingBox();
+  await p.mouse.click(caja.x + 250, caja.y + 250);
+  await p.mouse.click(caja.x + 500, caja.y + 300);
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(300);
+  const t = await p.locator('.m-medida').last().textContent();
+  if (!/Total: [\d.]+ (m|km)/.test(t)) throw new Error('medida: ' + t);
+  await p.keyboard.press('Escape');
 });
 
 console.log(JSON.stringify(s, null, 2));

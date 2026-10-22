@@ -67,7 +67,7 @@ await paso('la_leyenda_del_mapa_distingue_punto_exacto_de_centro_de_comunidad', 
   await p.waitForSelector('#r-mapa', { timeout: 8000 });
   await p.waitForTimeout(1200);
   const leyenda = await p.locator('#m-leyenda').textContent();
-  if (!leyenda.includes('Punto exacto del reporte')) throw new Error('la leyenda de administrador no distingue el punto exacto: ' + leyenda);
+  if (!leyenda.includes('Punto exacto')) throw new Error('la leyenda de administrador no distingue el punto exacto: ' + leyenda);
 });
 
 await paso('crear_operador_de_prueba', async () => {
@@ -106,8 +106,8 @@ await paso('operador_nunca_ve_el_punto_exacto_en_el_mapa_general', async () => {
   await p.waitForSelector('#r-mapa', { timeout: 8000 });
   await p.waitForTimeout(1200);
   const leyenda = await p.locator('#m-leyenda').textContent();
-  if (leyenda.includes('Punto exacto del reporte')) throw new Error('la leyenda de operador no debía mencionar el punto exacto: ' + leyenda);
-  if (!leyenda.includes('nunca en la coordenada exacta')) throw new Error('falta el aviso original de operador: ' + leyenda);
+  if (leyenda.includes('Punto exacto')) throw new Error('la leyenda de operador no debía mencionar el punto exacto: ' + leyenda);
+  if (!leyenda.includes('nunca la coordenada exacta')) throw new Error('falta el aviso original de operador: ' + leyenda);
 });
 
 // Nunca se borra una cuenta, se desactiva — mismo criterio que

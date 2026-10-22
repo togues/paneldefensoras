@@ -38,7 +38,7 @@ const PASOS = [
   {
     vista: 'mapa', objetivo: '#r-mapa',
     titulo: 'Mapa',
-    texto: 'Dónde ocurren los hechos. El punto exacto lo ve solo el administrador; nunca sale del panel.',
+    texto: 'Dónde ocurren los hechos. Filtre por tipo, departamento o estado, y con la línea de tiempo de abajo véalos aparecer en el orden en que llegaron. El punto exacto lo ve solo el administrador; nunca sale del panel.',
   },
   {
     vista: 'galeria', objetivo: '#g-grilla', soloAdmin: true,

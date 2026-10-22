@@ -33,8 +33,14 @@ const CONTENIDOS = {
   mapa: {
     overline: 'Ayuda · Mapa',
     titulo: '¿Por qué varios puntos caen en el mismo lugar?',
-    texto: 'En general, cada punto se ubica en el centro de la comunidad, no en el lugar exacto del hecho — en un caserío pequeño, una coordenada exacta puede señalar una vivienda. Solo el rol administrador ve además el punto exacto cuando la persona lo marcó (borde oscuro); el resto sigue viendo el centro de la comunidad. Varios reportes en el mismo lugar se agrupan (racimo): tóquelo para desarmarlo y verlos uno por uno.',
-    lista: ['Filtre por familia con los chips de arriba del mapa.', 'La rueda del mouse hace zoom directo, sin pasar por los controles.']
+    texto: 'En general, cada punto se ubica en el centro de la comunidad, no en el lugar exacto del hecho — en un caserío pequeño, una coordenada exacta puede señalar una vivienda. Solo el rol administrador ve además el punto exacto cuando la persona lo marcó (borde oscuro); el resto sigue viendo el centro de la comunidad. Varios reportes cercanos se agrupan en un círculo oscuro con el número: tóquelo para acercarse y verlos uno por uno.',
+    lista: [
+      'Arriba filtre por tipo de hecho (puede marcar varios), por hecho puntual, departamento o estado.',
+      'Abajo, la línea de tiempo: arrastre los extremos, toque una barra para ver solo ese periodo, o dele play para ver los casos aparecer en el orden en que llegaron.',
+      'Toque un punto para ver su ficha, copiar la coordenada o abrir el caso.',
+      'La regla, debajo del zoom, mide distancias: toque punto por punto y doble clic (o Enter) para terminar; Esc la borra.',
+      'El botón de capas, arriba a la derecha, cambia el fondo: claro, calles o satélite.'
+    ]
   },
   galeria: {
     overline: 'Ayuda · Galería',

@@ -610,3 +610,111 @@ button.barra.activa .bl span:first-child{font-weight:700}
 .vg-aviso b{font-size:14.5px}
 .vg-aviso p{font-size:13px;color:var(--on-surface-var);margin:4px 0 10px}
 .vg-aviso div{display:flex;gap:8px;justify-content:flex-end}
+
+/* --- Mapa de incidencias (vistas/mapa.js) ---------------------------
+   Filtros arriba, mapa con sus herramientas y línea de tiempo abajo.
+   Pedido de Marco, 22 de octubre de 2026. */
+.m-caja{padding-bottom:16px}
+.m-filtros{align-items:flex-end}
+.m-familias-grupo{flex:1 1 100%}
+.m-etiqueta{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--on-surface-var);font-weight:700}
+.m-familias{display:flex;flex-wrap:wrap;gap:8px}
+.m-fam{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  border:1.5px solid var(--outline-var);border-radius:var(--r-full);background:var(--surface);color:var(--on-surface);
+  padding:7px 12px 7px 10px;transition:.15s}
+.m-fam i{width:11px;height:11px;border-radius:50%;background:var(--fam)}
+.m-fam b{font-size:11.5px;font-weight:700;color:var(--on-surface-var);background:var(--surface-2);border-radius:var(--r-full);padding:1px 8px}
+.m-fam:hover{border-color:var(--outline)}
+.m-fam.act{border-color:var(--fam);background:color-mix(in srgb,var(--fam) 12%,#fff);box-shadow:inset 0 0 0 1px var(--fam)}
+.m-fam.act b{background:var(--fam);color:#fff}
+.m-fam:focus-visible{outline:3px solid var(--primary-c);outline-offset:2px}
+.m-sel{min-width:170px;flex:1 1 170px}
+.m-filtros-pie{display:flex;align-items:center;gap:12px;flex:1 1 220px;justify-content:flex-end;min-height:40px}
+.m-cuenta{font-size:13px;font-weight:700;color:var(--on-surface)}
+
+.m-marco{position:relative;margin-top:14px}
+.m-marco #r-mapa{height:clamp(440px,calc(100vh - 400px),760px);border-radius:var(--r-s);border:1px solid var(--outline-var)}
+.m-color{position:absolute;top:10px;left:56px;z-index:500;display:flex;align-items:center;gap:2px;
+  background:var(--surface);border-radius:var(--r-full);box-shadow:var(--e2);padding:3px;font-size:12px}
+.m-color span{padding:0 8px 0 10px;color:var(--on-surface-var);font-weight:600}
+.m-color button,.m-modo button{font:inherit;font-size:12px;font-weight:700;border:0;background:none;color:var(--on-surface-var);
+  border-radius:var(--r-full);padding:6px 12px;cursor:pointer}
+.m-color button.act,.m-modo button.act{background:var(--primary);color:#fff}
+.m-leyenda{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-top:10px;font-size:12.5px;color:var(--on-surface-var)}
+.m-leyenda span{display:inline-flex;align-items:center;gap:7px}
+.m-ley-pt{width:11px;height:11px;border-radius:50%;display:inline-block;box-sizing:border-box}
+.m-ley-sep{width:1px;height:14px;background:var(--outline-var)}
+.m-ley-nota{font-style:italic}
+
+/* Herramientas sobre el mapa */
+.m-herr a{display:grid!important;place-items:center;color:var(--on-surface)}
+.m-herr a .i{width:18px;height:18px}
+.m-herr a.act{background:var(--primary);color:#fff}
+.m-midiendo{cursor:crosshair!important}
+.m-midiendo .leaflet-interactive,.m-midiendo .m-racimo{pointer-events:none}
+.m-coord{background:rgba(255,255,255,.92);border-radius:var(--r-s);padding:4px 10px;font:600 12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+  color:var(--on-surface);box-shadow:var(--e1)}
+.leaflet-tooltip.m-medida{font-size:12.5px;border-radius:var(--r-s);border:0;box-shadow:var(--e2);padding:6px 10px}
+.leaflet-tooltip.m-medida span{font-size:11px;color:var(--on-surface-var)}
+.leaflet-tooltip.m-tip{font-size:12px;font-weight:600;border-radius:8px;border:0;box-shadow:var(--e2)}
+.leaflet-control-layers{border-radius:var(--r-s)!important;border:0!important;box-shadow:var(--e2)!important;font-family:var(--sans)}
+.leaflet-control-layers-expanded{padding:10px 14px 10px 10px;font-size:13px}
+
+/* Racimos */
+.m-racimo{display:grid;place-items:center;border-radius:50%;background:rgba(23,29,27,.18)}
+.m-racimo span{display:grid;place-items:center;width:calc(100% - 8px);height:calc(100% - 8px);border-radius:50%;
+  background:#171D1B;color:#fff;font-size:13px;font-weight:700;box-shadow:0 0 0 2px #fff}
+
+/* Ficha emergente de un caso */
+.m-popup .leaflet-popup-content-wrapper{padding:0;border-radius:var(--r-m);overflow:hidden;box-shadow:var(--e3)}
+.m-popup .leaflet-popup-content{margin:0;width:auto!important;font-family:var(--sans);line-height:1.45}
+.m-popup a.leaflet-popup-close-button{color:#fff;top:6px;right:6px}
+.m-pop-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 34px 10px 14px;
+  background:var(--fam);color:#fff;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.m-pop-cab .pill{text-transform:none;letter-spacing:0;box-shadow:0 0 0 1.5px #fff}
+.m-pop-cuerpo{padding:12px 14px 14px}
+.m-pop-folio{font:700 15px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--on-surface);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.m-pop-alta{font-family:var(--sans);font-size:11px;font-weight:700;color:var(--error);background:var(--error-c);border-radius:var(--r-full);padding:2px 8px}
+.m-pop-tipo{font-size:13.5px;font-weight:600;color:var(--on-surface-var);margin:2px 0 10px}
+.m-pop dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px;margin:0 0 10px}
+.m-pop dt{color:var(--on-surface-var);font-weight:600}
+.m-pop dd{margin:0;color:var(--on-surface)}
+.m-pop-nota{font-size:11.5px;color:var(--on-surface-var)}
+.m-pop-coord{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface-1);
+  border-radius:var(--r-s);padding:8px 10px;margin-bottom:12px}
+.m-pop-coord code{display:block;font:600 12.5px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--on-surface)}
+.m-pop-abrir{width:100%;justify-content:center;display:flex}
+
+/* Línea de tiempo */
+.m-tiempo{margin-top:16px;border-top:1px solid var(--outline-var);padding-top:14px}
+.m-tiempo-cab{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.m-play{width:40px;height:40px;border-radius:50%;border:0;background:var(--primary);color:#fff;cursor:pointer;display:grid;place-items:center;flex:0 0 auto}
+.m-play .i{width:18px;height:18px;fill:currentColor}
+.m-play:focus-visible{outline:3px solid var(--primary-c);outline-offset:2px}
+.m-tiempo-texto{flex:1 1 220px;font-size:13px;color:var(--on-surface-var)}
+.m-tiempo-texto b{color:var(--on-surface);font-size:14px}
+.m-modo{display:flex;gap:2px;background:var(--surface-1);border-radius:var(--r-full);padding:3px}
+.m-barras{display:flex;align-items:flex-end;gap:2px;height:64px;padding:0 9px}
+.m-barra{flex:1 1 0;min-width:2px;height:100%;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;cursor:pointer;
+  background:linear-gradient(to top,var(--surface-2) 2px,transparent 2px)}
+.m-barra i{display:block;width:100%}
+.m-barra i:last-child{border-radius:3px 3px 0 0}
+.m-barra.fuera{opacity:.22}
+.m-barra:hover{filter:brightness(.92)}
+.m-deslizador{position:relative;height:26px}
+.m-deslizador input{position:absolute;inset:0;width:100%;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
+.m-deslizador input::-webkit-slider-runnable-track{height:4px;background:var(--surface-2);border-radius:2px}
+.m-deslizador input + input::-webkit-slider-runnable-track{background:transparent}
+.m-deslizador input::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:18px;height:18px;margin-top:-7px;border-radius:50%;
+  background:#fff;border:3px solid var(--primary);cursor:grab;box-shadow:var(--e1)}
+.m-deslizador input::-moz-range-track{height:4px;background:var(--surface-2);border-radius:2px}
+.m-deslizador input + input::-moz-range-track{background:transparent}
+.m-deslizador input::-moz-range-thumb{pointer-events:auto;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--primary);cursor:grab}
+.m-deslizador input:focus-visible::-webkit-slider-thumb{outline:3px solid var(--primary-c)}
+.m-ejes{display:flex;justify-content:space-between;font-size:11.5px;color:var(--on-surface-var);padding:0 2px}
+
+@media (max-width:720px){
+  .m-color{left:52px;top:8px}
+  .m-color span{display:none}
+  .m-filtros-pie{justify-content:space-between}
+}
