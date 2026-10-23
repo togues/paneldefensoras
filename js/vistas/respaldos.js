@@ -10,6 +10,7 @@
    ===================================================================== */
 import { obtenerRespaldos, generarRespaldo, actualizarConfiguracionRespaldos, descargarRespaldo } from '../data/api-client.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
+import { esc } from '../core/graficas.js';
 
 const ETIQ_METODO = { manual: 'Manual', automatico: 'Automático' };
 
@@ -64,10 +65,10 @@ function pintarLista(respaldos) {
   cont.innerHTML = respaldos.map((r) => `
     <div class="lista-item">
       <div class="li-t">
-        <b class="codigo-mono">${r.nombre_archivo}</b>
-        <small>${formatoTamano(r.tamano_bytes)} · ${formatoFecha(r.generado_en)} · ${ETIQ_METODO[r.metodo] || r.metodo} · ${r.generado_por}</small>
+        <b class="codigo-mono">${esc(r.nombre_archivo)}</b>
+        <small>${formatoTamano(r.tamano_bytes)} · ${formatoFecha(r.generado_en)} · ${esc(ETIQ_METODO[r.metodo] || r.metodo)} · ${esc(r.generado_por)}</small>
       </div>
-      <span class="li-a" data-descargar="${r.id}" data-nombre="${r.nombre_archivo}">Descargar</span>
+      <span class="li-a" data-descargar="${r.id}" data-nombre="${esc(r.nombre_archivo)}">Descargar</span>
     </div>`).join('');
 
   cont.querySelectorAll('[data-descargar]').forEach((el) => {
@@ -100,7 +101,7 @@ function pintarBitacora(bitacora) {
     const titulo = e.tipo === 'descargado'
       ? `Respaldo descargado — ${e.nombre_archivo}`
       : `Respaldo generado (${(ETIQ_METODO[e.metodo] || e.metodo).toLowerCase()}) — ${e.nombre_archivo}`;
-    return `<div class="bit"><b>${titulo}</b><span>${e.usuario} · ${formatoFecha(e.fecha)}</span></div>`;
+    return `<div class="bit"><b>${esc(titulo)}</b><span>${esc(e.usuario)} · ${formatoFecha(e.fecha)}</span></div>`;
   }).join('');
 }
 
@@ -108,7 +109,7 @@ async function cargarYPintar(raiz) {
   const r = await obtenerRespaldos();
   document.getElementById('r-cargando')?.remove();
   if (!r.ok) {
-    raiz.insertAdjacentHTML('beforeend', `<p class="error-carga">No se pudo cargar Respaldos: ${r.error} (${r.code}).</p>`);
+    raiz.insertAdjacentHTML('beforeend', `<p class="error-carga">No se pudo cargar Respaldos: ${esc(r.error)} (${esc(r.code)}).</p>`);
     return;
   }
   document.getElementById('r-resumen').textContent = `${r.data.respaldos.length} respaldo${r.data.respaldos.length === 1 ? '' : 's'} disponible${r.data.respaldos.length === 1 ? '' : 's'}`;

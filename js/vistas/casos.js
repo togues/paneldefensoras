@@ -178,14 +178,14 @@ function esqueleto() {
 function filaCaso(c) {
   const anomaloChip = c.marcado_anomalo ? ' <span class="pill p-a">Anómalo</span>' : '';
   return `<tr data-id="${c.id}">
-      <td class="folio">${c.folio || '—'}</td>
-      <td>${c.comunidad || '—'}<div class="sub2">${c.canton || ''}</div></td>
-      <td>${c.departamento || '—'}</td>
-      <td>${c.tipo}</td>
-      <td><span class="fam"><i style="background:${COLOR_FAMILIA[c.familia] || '#6F7976'}"></i>${NOMBRE_FAMILIA[c.familia] || c.familia}</span></td>
+      <td class="folio">${esc(c.folio || '—')}</td>
+      <td>${esc(c.comunidad || '—')}<div class="sub2">${esc(c.canton || '')}</div></td>
+      <td>${esc(c.departamento || '—')}</td>
+      <td>${esc(c.tipo)}</td>
+      <td><span class="fam"><i style="background:${COLOR_FAMILIA[c.familia] || '#6F7976'}"></i>${esc(NOMBRE_FAMILIA[c.familia] || c.familia)}</span></td>
       <td class="sub2">${formatoFecha(c.fecha_registro)}</td>
-      <td class="sub2">${c.prioridad}</td>
-      <td><span class="pill ${CLASE_ESTADO[c.estado] || 'p-i'}">${ETIQ_ESTADO[c.estado] || c.estado}</span>${anomaloChip}${c.organizacion_seguimiento ? `<div class="sub2">→ ${c.organizacion_seguimiento}</div>` : ''}</td>
+      <td class="sub2">${esc(c.prioridad)}</td>
+      <td><span class="pill ${CLASE_ESTADO[c.estado] || 'p-i'}">${esc(ETIQ_ESTADO[c.estado] || c.estado)}</span>${anomaloChip}${c.organizacion_seguimiento ? `<div class="sub2">→ ${esc(c.organizacion_seguimiento)}</div>` : ''}</td>
     </tr>`;
 }
 
@@ -271,7 +271,7 @@ async function cargarTabla() {
 
   const r = await obtenerCasos(leerFiltros());
   if (!r.ok) {
-    document.getElementById('c-tabla').innerHTML = `<tr><td colspan="8" class="error-carga">No se pudo cargar: ${r.error} (${r.code})</td></tr>`;
+    document.getElementById('c-tabla').innerHTML = `<tr><td colspan="8" class="error-carga">No se pudo cargar: ${esc(r.error)} (${esc(r.code)})</td></tr>`;
     return;
   }
 
@@ -364,8 +364,8 @@ function pintarChipsExtra() {
   const claves = Object.keys(filtrosExtra);
   cont.hidden = claves.length === 0;
   cont.innerHTML = claves.map((c) => `
-    <span class="chip-filtro">${etiquetasExtra[c] || c}
-      <button type="button" data-quitar-extra="${c}" aria-label="Quitar este filtro">×</button></span>`).join('');
+    <span class="chip-filtro">${esc(etiquetasExtra[c] || c)}
+      <button type="button" data-quitar-extra="${esc(c)}" aria-label="Quitar este filtro">×</button></span>`).join('');
 }
 
 /**
@@ -447,7 +447,7 @@ async function cargarComunidades() {
     comunidadesCache = (datos.comunidades || []).slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
   const select = document.getElementById('c-comunidad');
-  select.insertAdjacentHTML('beforeend', comunidadesCache.map((c) => `<option value="${c.id}">${c.nombre}</option>`).join(''));
+  select.insertAdjacentHTML('beforeend', comunidadesCache.map((c) => `<option value="${esc(c.id)}">${esc(c.nombre)}</option>`).join(''));
 }
 
 // Mismo criterio que cargarComunidades(): territorio del HECHO, nunca
@@ -459,7 +459,7 @@ async function cargarDepartamentos() {
     departamentosCache = (datos.departamentos || []).slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
   const select = document.getElementById('c-departamento');
-  select.insertAdjacentHTML('beforeend', departamentosCache.map((d) => `<option value="${d.id}">${d.nombre}</option>`).join(''));
+  select.insertAdjacentHTML('beforeend', departamentosCache.map((d) => `<option value="${esc(d.id)}">${esc(d.nombre)}</option>`).join(''));
 }
 
 // Organización responsable del seguimiento (migración 011) — una
@@ -476,7 +476,7 @@ async function asegurarOrganizaciones() {
 
 async function cargarOrganizaciones() {
   await asegurarOrganizaciones();
-  const opciones = organizacionesCache.map((o) => `<option value="${o.id}">${o.nombre}</option>`).join('');
+  const opciones = organizacionesCache.map((o) => `<option value="${esc(o.id)}">${esc(o.nombre)}</option>`).join('');
   document.getElementById('c-seguimiento').insertAdjacentHTML('beforeend', opciones);
   document.getElementById('c-asignar-org')?.insertAdjacentHTML('beforeend', opciones);
 }
@@ -491,7 +491,7 @@ async function abrirDetalle(id) {
 
   const [r] = await Promise.all([obtenerCaso(id), asegurarOrganizaciones()]);
   if (!r.ok) {
-    detalle.innerHTML = `<p class="error-carga">No se pudo cargar el caso: ${r.error} (${r.code})</p>`;
+    detalle.innerHTML = `<p class="error-carga">No se pudo cargar el caso: ${esc(r.error)} (${esc(r.code)})</p>`;
     return;
   }
   const c = r.data;
@@ -519,7 +519,7 @@ async function abrirDetalle(id) {
     ? c.seguimiento.map((s) => {
         const etiqueta = s.estado_nuevo ? (ETIQ_ESTADO[s.estado_nuevo] || s.estado_nuevo) : null;
         const titulo = etiqueta ? `${etiqueta}${s.nota ? ' — ' + s.nota : ''}` : (s.nota || 'Sin detalle');
-        return `<div class="bit"><b>${titulo}</b><span>${s.usuario} · ${formatoFecha(s.fecha)}</span></div>`;
+        return `<div class="bit"><b>${esc(titulo)}</b><span>${esc(s.usuario)} · ${formatoFecha(s.fecha)}</span></div>`;
       }).join('')
     : '<p class="sub2">Sin cambios registrados todavía.</p>';
 
@@ -548,7 +548,7 @@ async function abrirDetalle(id) {
 
   detalle.innerHTML = `
     <div class="det-head">
-      <div><h2>Caso ${c.folio || '—'}</h2><p>Recibido ${formatoFecha(c.fecha_registro)}</p></div>
+      <div><h2>Caso ${esc(c.folio || '—')}</h2><p>Recibido ${formatoFecha(c.fecha_registro)}</p></div>
       <button class="cerrar" id="c-cerrar" aria-label="Cerrar"><svg class="i"><use href="#i-cerrar"/></svg></button>
     </div>
     <div class="grid2">
@@ -556,10 +556,10 @@ async function abrirDetalle(id) {
         <div class="caja" style="margin-bottom:14px">
           <h2>Lo que se reportó</h2>
           <div class="relato">"${esc(c.descripcion || 'Sin descripción.')}"</div>
-          <div class="dato"><b>Tipo de hecho</b><span>${c.tipo_hecho}</span></div>
+          <div class="dato"><b>Tipo de hecho</b><span>${esc(c.tipo_hecho)}</span></div>
           <div class="dato"><b>Cuándo ocurrió</b><span>${c.fecha_incidente ? formatoFechaLarga(c.fecha_incidente) : 'Sin precisar'}</span></div>
-          <div class="dato"><b>Comunidad</b><span>${c.comunidad || '—'}</span></div>
-          ${c.referencia_lugar ? `<div class="dato"><b>Seña del lugar</b><span>${c.referencia_lugar}</span></div>` : ''}
+          <div class="dato"><b>Comunidad</b><span>${esc(c.comunidad || '—')}</span></div>
+          ${c.referencia_lugar ? `<div class="dato"><b>Seña del lugar</b><span>${esc(c.referencia_lugar)}</span></div>` : ''}
           <div class="dato"><b>Ubicación</b><span>${c.coordenada_exacta ? 'La persona marcó un punto exacto' : 'Mostrada a nivel de comunidad — sin punto marcado'}</span></div>
           ${c.coordenada_exacta ? '<div id="c-mapa-exacto"></div><p class="sub2">Punto exacto que marcó la persona al reportar — ver docs/decision-05-coordenada-exacta-panel.md. Nunca aparece en el mapa general ni en el muro público.</p>' : ''}
         </div>
@@ -578,7 +578,7 @@ async function abrirDetalle(id) {
             <span>Seguimiento a cargo de</span>
             <select id="c-org-seguimiento" class="campo-filtro" style="border:none;padding:0;font-weight:700" aria-label="Organización responsable del seguimiento">
               <option value="">Sin asignar</option>
-              ${organizacionesCache.map((o) => `<option value="${o.id}" ${String(o.id) === String(c.organizacion_seguimiento_id) ? 'selected' : ''}>${o.nombre}</option>`).join('')}
+              ${organizacionesCache.map((o) => `<option value="${esc(o.id)}" ${String(o.id) === String(c.organizacion_seguimiento_id) ? 'selected' : ''}>${esc(o.nombre)}</option>`).join('')}
             </select>
           </div>
           <textarea class="campo" id="c-nota" placeholder="Anote lo actuado… (obligatorio para descartar)"></textarea>
@@ -899,13 +899,13 @@ async function exportarCsv(boton) {
 
 function filaInformePdf(c) {
   return `<tr>
-    <td>${c.folio || '—'}</td>
-    <td>${c.comunidad || '—'}<br><span class="chico">${c.canton || ''}</span></td>
-    <td>${c.tipo}</td>
-    <td>${NOMBRE_FAMILIA[c.familia] || c.familia}</td>
+    <td>${esc(c.folio || '—')}</td>
+    <td>${esc(c.comunidad || '—')}<br><span class="chico">${esc(c.canton || '')}</span></td>
+    <td>${esc(c.tipo)}</td>
+    <td>${esc(NOMBRE_FAMILIA[c.familia] || c.familia)}</td>
     <td>${formatoFechaLarga(c.fecha_registro)}</td>
-    <td>${c.prioridad}</td>
-    <td>${ETIQ_ESTADO[c.estado] || c.estado}</td>
+    <td>${esc(c.prioridad)}</td>
+    <td>${esc(ETIQ_ESTADO[c.estado] || c.estado)}</td>
   </tr>`;
 }
 
@@ -941,7 +941,7 @@ async function abrirInformePdf(boton) {
   const conteoPorEstado = {};
   for (const c of r.casos) conteoPorEstado[c.estado] = (conteoPorEstado[c.estado] || 0) + 1;
   const resumenHtml = Object.entries(conteoPorEstado)
-    .map(([estado, n]) => `<div class="resumen-item"><b>${n}</b><span>${ETIQ_ESTADO[estado] || estado}</span></div>`)
+    .map(([estado, n]) => `<div class="resumen-item"><b>${n}</b><span>${esc(ETIQ_ESTADO[estado] || estado)}</span></div>`)
     .join('');
 
   ventana.document.open();
@@ -971,8 +971,8 @@ async function abrirInformePdf(boton) {
 <body>
   <h1>Observatorio Comunitario de Vulneraciones de Derechos a Personas Defensoras</h1>
   <p class="subtitulo">Informe de casos</p>
-  <p class="meta">Generado el ${new Date().toLocaleDateString('es-SV', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}${usuario ? ' por ' + usuario.nombre : ''}</p>
-  <p class="meta">Filtros aplicados: ${etiquetasFiltrosActivos()}</p>
+  <p class="meta">Generado el ${new Date().toLocaleDateString('es-SV', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}${usuario ? ' por ' + esc(usuario.nombre) : ''}</p>
+  <p class="meta">Filtros aplicados: ${esc(etiquetasFiltrosActivos())}</p>
   <div class="resumen">
     <div class="resumen-item"><b>${r.casos.length}</b><span>Total de casos</span></div>
     ${resumenHtml}

@@ -7,6 +7,7 @@
    diseno/tablero_completo.html, con carga diferida por vista.
    ===================================================================== */
 import { log } from './core/logger.js';
+import { esc } from './core/graficas.js';
 import { cerrarSesion } from './data/api-client.js';
 import * as sesion from './data/sesion.js';
 import { montar as montarLogin } from './pantalla-login.js';
@@ -79,8 +80,8 @@ export function irAVista(nombre) {
 function pintarUsuarioPie() {
   const usuario = sesion.usuarioActual();
   document.getElementById('usuario-pie').innerHTML = `
-    <b>${usuario?.nombre || 'Sesión activa'}</b>
-    ${usuario?.rol ? `${usuario.rol} · ` : ''}<a id="cerrar-sesion"><svg class="i"><use href="#i-salir"/></svg>Cerrar sesión</a>`;
+    <b>${esc(usuario?.nombre || 'Sesión activa')}</b>
+    ${usuario?.rol ? `${esc(usuario.rol)} · ` : ''}<a id="cerrar-sesion"><svg class="i"><use href="#i-salir"/></svg>Cerrar sesión</a>`;
   document.getElementById('cerrar-sesion').addEventListener('click', async () => {
     await cerrarSesion();
     sesion.borrar();

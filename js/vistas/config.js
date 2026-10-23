@@ -15,6 +15,7 @@
 import { obtenerUsuarios, crearUsuario, actualizarUsuario } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
+import { esc } from '../core/graficas.js';
 import { esVistaActiva } from '../main.js';
 import { esqueletoCodigos, enlazarCodigos, cargarCodigos } from './config-codigos.js';
 
@@ -58,8 +59,8 @@ function pintarUsuarios(usuarios) {
   document.getElementById('cfg-usuarios').innerHTML = usuarios.map((u) => `
     <div class="lista-item">
       <div class="li-t">
-        <b>${u.nombre}${u.id === yo?.id ? ' (usted)' : ''}</b>
-        <small>${u.correo} · ${u.rol} · Último acceso: ${formatoFecha(u.ultimo_acceso)}</small>
+        <b>${esc(u.nombre)}${u.id === yo?.id ? ' (usted)' : ''}</b>
+        <small>${esc(u.correo)} · ${esc(u.rol)} · Último acceso: ${formatoFecha(u.ultimo_acceso)}</small>
       </div>
       <span class="li-a" data-usuario-toggle="${u.id}" data-activo="${u.activo}">${u.activo ? 'Desactivar' : 'Reactivar'}</span>
     </div>`).join('') || '<p class="sub2">Sin cuentas todavía.</p>';
