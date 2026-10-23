@@ -1,5 +1,5 @@
 // Config pública de runtime del panel — mismo patrón que
-// app/js/config/runtime.js. El panel es sí o sí en línea (Marco, al
+// app/js/config/runtime.js. El panel es sí o sí en línea (decidido al
 // arrancar esto): no hay modo sin conexión que soportar acá, así que no
 // hace falta la lógica de "isLocal" completa de la app comunitaria,
 // solo el mismo default de apiBaseUrl same-origin para producción.

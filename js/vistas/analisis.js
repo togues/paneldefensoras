@@ -1,11 +1,11 @@
 /* =====================================================================
    Vista Análisis — tablero con filtros en cascada, al estilo Power BI /
-   Metabase (pedido de Marco, 2026-10-20). Un filtro arriba, o un clic
+   Metabase (pedido del 2026-10-20). Un filtro arriba, o un clic
    en cualquier gráfico, refresca TODO el tablero de una vez con una
    sola llamada a GET /admin/analisis. La barra de filtros vive aparte,
    en analisis-filtros.js.
 
-   Sin saltos al filtrar (la queja de REDNA con conexiones lentas):
+   Sin saltos al filtrar (la queja del equipo con conexiones lentas):
    - el tablero no se vacía mientras carga: se atenúa y sigue en su
      lugar, con una barra de progreso fina arriba;
    - las gráficas Chart.js se actualizan en su lugar (graficaEnLugar),
@@ -61,7 +61,7 @@ function esqueleto() {
         <div class="caja"><h2>Tipos de hecho</h2><p class="sub">Toque uno para filtrar.</p><div class="barras" id="a-tipos"></div></div>
         <div>
           <div class="caja"><h2>Estado de los casos</h2><p class="sub">Toque uno para filtrar.</p><div class="barras" id="a-estados"></div></div>
-          <div class="caja"><h2>Seguimiento a cargo de</h2><p class="sub">Organización a la que REDNA le asignó cada caso. Toque una para filtrar.</p><div class="barras" id="a-organizaciones"></div></div>
+          <div class="caja"><h2>Seguimiento a cargo de</h2><p class="sub">Organización a la que el equipo le asignó cada caso. Toque una para filtrar.</p><div class="barras" id="a-organizaciones"></div></div>
         </div>
       </div>
       <div class="grid2">

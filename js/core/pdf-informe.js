@@ -1,11 +1,11 @@
 /* =====================================================================
-   Informe de seguimiento en PDF — lo que REDNA entrega en mano a una
+   Informe de seguimiento en PDF — lo que el equipo entrega en mano a una
    organización comunitaria (Junta de Agua, Mesa Territorial...) para que
    le dé seguimiento a los casos de su tema. Ver
    docs/decision-07-informe-seguimiento.md.
 
    Se arma en el NAVEGADOR con pdf-lib: no queda copia en el servidor, y
-   no se manda por correo (pedido de Marco: "para no dejar rastro").
+   no se manda por correo (pedido expreso: "para no dejar rastro").
 
    SIN METADATOS: PDFDocument.create({ updateMetadata: false }) no escribe
    Producer, Creator, CreationDate, ModDate, Author ni Title — el botón
@@ -17,7 +17,7 @@
    estado → por tema → por comunidad → lo que se repite → caso por caso.
    Nunca relato, lugar, fotografías ni coordenadas (no vienen de la API).
    ===================================================================== */
-import { NOMBRE_FAMILIA, ETIQ_ESTADO, diaLegible } from './graficas.js';
+import { NOMBRE_FAMILIA, NOMBRE_OBSERVATORIO, ETIQ_ESTADO, diaLegible } from './graficas.js';
 
 const A4 = [595.28, 841.89];
 const MARGEN = 48;
@@ -190,7 +190,7 @@ export async function construirInformePdf({ destinatario, filtrosTexto, tablero,
   l.texto(destinatario ? `Para: ${destinatario}` : 'Informe de seguimiento', { tam: 20, negrita: true, antes: 6 });
   l.texto(`Período: del ${fecha(periodo.desde)} al ${fecha(periodo.hasta)}`, { tam: 10, color: COLOR.suave, antes: 6 });
   if (filtrosTexto.length) l.texto(filtrosTexto.join('  ·  '), { tam: 9, color: COLOR.suave, antes: 2 });
-  l.texto('Elaborado por REDNA con el Observatorio Comunitario de Vulneraciones de Derechos a Personas Defensoras.', { tam: 8.5, color: COLOR.tenue, antes: 4 });
+  l.texto(`Elaborado con el ${NOMBRE_OBSERVATORIO}.`, { tam: 8.5, color: COLOR.tenue, antes: 4 });
   l.regla();
 
   // ---- 1. Resumen
@@ -242,7 +242,7 @@ export async function construirInformePdf({ destinatario, filtrosTexto, tablero,
   l.seccion(`${n}. Detalle de los casos`);
   l.texto(
     'Cada caso se identifica por su folio. No se incluye el relato de la persona, el lugar exacto ni fotografías.' +
-    (incluirActuado ? ' "Lo actuado" son las anotaciones de seguimiento de REDNA.' : ''),
+    (incluirActuado ? ' "Lo actuado" son las anotaciones de seguimiento del equipo.' : ''),
     { tam: 8.5, color: COLOR.tenue }
   );
   l.y -= 4;

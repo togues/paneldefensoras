@@ -7,7 +7,7 @@
    El mockup traía chips de estado y unos "▾" decorativos sin función.
    Se le agregó un buscador de texto libre (folio, relato, comunidad),
    comunidad real (de /catalogos), prioridad y rango de fechas —
-   pedido de Marco: "una tabla bien dinámica", combinando varios
+   pedido: "una tabla bien dinámica", combinando varios
    filtros a la vez (estado + prioridad + comunidad + mes, por ejemplo).
 
    El panel de "Gestión" (cambiar estado, agregar nota, descartar,
@@ -16,7 +16,7 @@
    porque ya hay sesión real (lib/PanelAuth.php): cada cambio queda en
    seguimiento_caso con el usuario que lo hizo, de verdad.
 
-   "Exportar" del mockup tampoco hacía nada — pedido de Marco: bajar en
+   "Exportar" del mockup tampoco hacía nada — se pidió bajar en
    CSV/Excel y un informe en PDF "bien diagramado... listo para
    firmarlo", respetando los filtros que estén puestos en ese momento,
    no solo la página visible. Ver exportarCsv()/exportarPdf() más abajo.
@@ -25,7 +25,7 @@ import { obtenerCasos, obtenerCaso, obtenerCatalogos, actualizarCaso, publicarCa
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
 import { cargarLeaflet } from '../core/cargador-librerias.js';
-import { esc } from '../core/graficas.js';
+import { esc, NOMBRE_OBSERVATORIO } from '../core/graficas.js';
 
 const ETIQ_ESTADO = { recibido: 'Sin revisar', en_investigacion: 'En investigación', cerrado: 'Cerrado', descartado: 'Descartado' };
 const CLASE_ESTADO = { recibido: 'p-n', en_investigacion: 'p-i', cerrado: 'p-c', descartado: 'p-i' };
@@ -463,7 +463,7 @@ async function cargarDepartamentos() {
 }
 
 // Organización responsable del seguimiento (migración 011) — una
-// decisión de REDNA sobre el caso, NUNCA la estructura de quien
+// decisión del equipo sobre el caso, NUNCA la estructura de quien
 // reporta (regla 2; ver docs/decision-07-informe-seguimiento.md). Usa
 // el mismo catálogo de organizaciones.
 async function asegurarOrganizaciones() {
@@ -811,8 +811,8 @@ function cerrarFotoCompleta() {
 
 /**
  * Permanente: sin papelera ni forma de deshacer (ver el comentario
- * largo en admin/evidencia.php). Por eso el aviso es explícito —pedido
- * de Marco— y no un simple "¿Eliminar?" distraído.
+ * largo en admin/evidencia.php). Por eso el aviso es explícito —a
+ * pedido— y no un simple "¿Eliminar?" distraído.
  */
 async function borrarFoto(boton) {
   const idFoto = boton.dataset.borrarFoto;
@@ -969,7 +969,7 @@ async function abrirInformePdf(boton) {
 </style>
 </head>
 <body>
-  <h1>Observatorio Comunitario de Vulneraciones de Derechos a Personas Defensoras</h1>
+  <h1>${NOMBRE_OBSERVATORIO}</h1>
   <p class="subtitulo">Informe de casos</p>
   <p class="meta">Generado el ${new Date().toLocaleDateString('es-SV', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}${usuario ? ' por ' + esc(usuario.nombre) : ''}</p>
   <p class="meta">Filtros aplicados: ${esc(etiquetasFiltrosActivos())}</p>

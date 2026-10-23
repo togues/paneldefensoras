@@ -325,7 +325,7 @@ tbody tr:hover{background:var(--surface-1)}
 
 /* Nuevo acá: el mockup dibujaba las gráficas a mano en SVG (funciones
    lineas()/dona() en su <script>). Se cambió por Chart.js (CDN, con el
-   visto bueno de Marco: "sí o sí en línea, podemos usar las librerías
+   visto bueno del equipo: "sí o sí en línea, podemos usar las librerías
    que queramos") — mismo resultado visual, sin mantener trigonometría
    de gráficas a mano. Chart.js necesita un contenedor con alto fijo
    para su modo responsive; .chart-caja es ese contenedor. */
@@ -366,7 +366,7 @@ tbody tr:hover{background:var(--surface-1)}
 /* Galería de evidencias (vistas/galeria.js) — sin bordes: cada foto se
    separa por espacio y una sombra suave, y la jerarquía la da la
    tipografía (folio en negrita, metadatos en gris chico), siguiendo
-   los principios de diseño de Marco (.claude/skills/rediseno-admin).
+   los principios de diseño del proyecto.
    Cada cuadro es un <button> real: se alcanza y se abre con teclado. */
 .gal-filtros{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:6px}
 .gal-filtros .filtros{margin-bottom:17px}
@@ -613,7 +613,7 @@ button.barra.activa .bl span:first-child{font-weight:700}
 
 /* --- Mapa de incidencias (vistas/mapa.js) ---------------------------
    Filtros arriba, mapa con sus herramientas y línea de tiempo abajo.
-   Pedido de Marco, 22 de octubre de 2026. */
+   Pedido del 22 de octubre de 2026. */
 .m-caja{padding-bottom:16px}
 .m-filtros{align-items:flex-end}
 .m-familias-grupo{flex:1 1 100%}

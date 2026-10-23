@@ -1,7 +1,7 @@
 /* =====================================================================
    Salud de datos → "Anomalías para revisar": once revisiones en tres
    grupos (datos inconsistentes, uso sospechoso, casos sin atender), con
-   GET /admin/calidad-datos. Pedido de Marco, 21 de octubre de 2026.
+   GET /admin/calidad-datos. Pedido del 21 de octubre de 2026.
 
    Cada tarjeta dice cuántos casos encontró; al tocarla aparece la lista
    y cada caso se abre en su ficha (abrirFichaCaso, de casos.js). Nada

@@ -1,7 +1,7 @@
 /* =====================================================================
    Vista "Cómo funciona" — las reglas de negocio del observatorio en
-   lenguaje llano, para que el personal de REDNA las consulte desde el
-   panel. Pedido de Marco, 21 de octubre de 2026.
+   lenguaje llano, para que el personal las consulte desde el
+   panel. Pedido del 21 de octubre de 2026.
 
    Cada regla se verificó contra el código ese día (no contra lo que
    decían los documentos). Si una regla cambia en el código, se cambia
@@ -127,7 +127,7 @@ const CAPITULOS = [
   {
     id: 'anonimato',
     titulo: 'Anonimato de quien reporta',
-    intro: 'El sistema está hecho para que nadie, ni siquiera REDNA, pueda saber quién envió un reporte.',
+    intro: 'El sistema está hecho para que nadie, ni siquiera el equipo que lo administra, pueda saber quién envió un reporte.',
     reglas: [
       'No existe ningún lugar donde guardar nombre, documento, correo, teléfono ni edad de quien reporta. No es una opción apagada: la base de datos no tiene esos campos.',
       'Cada persona tiene un alias que elige de una lista (por ejemplo, RÍO CLARO). No lo escribe, para que no ponga su nombre por costumbre.',
@@ -159,7 +159,7 @@ const CAPITULOS = [
       'Recupera la cuenta, no los reportes: los reportes anteriores no aparecen en el teléfono nuevo. Si alguien obliga a la persona a entregar su código, no ve lo que denunció. Los reportes siguen completos en el panel.',
       'El servidor solo guarda el código de recuperación de forma que puede comprobarlo, pero no leerlo. Si la persona lo pierde, nadie puede volver a dárselo.',
       'Se permiten 5 intentos de recuperación por hora desde una misma conexión.',
-      'La clave de 4 números para abrir la app es opcional. Todo lo que la app guarda en el teléfono va cifrado, con clave o sin ella. Hoy no hay límite de intentos fallidos y no se borra nada, para no destruir la evidencia si le quitan el teléfono a alguien. Está pendiente de que lo defina ACUA.',
+      'La clave de 4 números para abrir la app es opcional. Todo lo que la app guarda en el teléfono va cifrado, con clave o sin ella. Hoy no hay límite de intentos fallidos y no se borra nada, para no destruir la evidencia si le quitan el teléfono a alguien. Está pendiente de definirse.',
     ],
   },
   {
@@ -190,14 +190,14 @@ const CAPITULOS = [
   {
     id: 'casos',
     titulo: 'Casos: estados, prioridad y bitácora',
-    intro: 'Cada reporte que llega es un caso que REDNA revisa y acompaña.',
+    intro: 'Cada reporte que llega es un caso que el equipo revisa y acompaña.',
     reglas: [
       'Estados: Recibido, En investigación, Cerrado y Descartado. Se puede pasar de uno a otro en cualquier orden. Para descartar hay que escribir el motivo.',
       'La prioridad la fija el sistema al recibir el caso: alta si el tipo de hecho está marcado como grave y media en los demás. Hoy no se cambia desde el panel.',
       'Lo que contó la persona nunca se edita, ni desde el panel ni por otra vía. Así conserva su valor como prueba.',
       'Toda interpretación va en la bitácora del caso: cada cambio de estado y cada nota queda con quién la hizo y cuándo.',
       'Algunas notas las pone el sistema solo, por ejemplo al eliminar una foto, al publicar o al asignar el seguimiento. Esas no salen en el informe PDF.',
-      'La organización de seguimiento (por ejemplo, la Junta de Agua) es una decisión de REDNA sobre el caso. No es la organización de quien reportó. Cualquier rol la asigna caso por caso; asignarla a muchos casos a la vez es solo del administrador.',
+      'La organización de seguimiento (por ejemplo, la Junta de Agua) es una decisión del equipo sobre el caso. No es la organización de quien reportó. Cualquier rol la asigna caso por caso; asignarla a muchos casos a la vez es solo del administrador.',
       'El sistema marca como "anómalo" un caso con caracteres raros o con contenido bloqueado por el filtro. Esos casos se revisan en Salud de datos.',
     ],
   },
@@ -214,7 +214,7 @@ const CAPITULOS = [
   {
     id: 'muro',
     titulo: 'Muro público',
-    intro: 'El muro muestra hacia afuera lo que REDNA decide hacer público.',
+    intro: 'El muro muestra hacia afuera lo que el equipo decide hacer público.',
     reglas: [
       'Nada se publica solo: cada publicación la aprueba una persona con rol administrador.',
       'El texto para el muro arranca con el relato de la persona. El administrador corrige la ortografía, quita nombres, caseríos, teléfonos o cualquier dato que identifique a alguien, y puede agregar líneas. El relato original no cambia: queda como evidencia.',
@@ -226,11 +226,11 @@ const CAPITULOS = [
   {
     id: 'seguimiento',
     titulo: 'Seguimiento: no hay avisos automáticos',
-    intro: 'El seguimiento de los casos es manual: lo decide y lo hace el equipo de REDNA.',
+    intro: 'El seguimiento de los casos es manual: lo decide y lo hace el equipo coordinador.',
     reglas: [
       'El sistema no avisa solo a nadie. Ningún reporte dispara un mensaje a la red ni a otras organizaciones.',
       'Un hecho grave llega marcado como prioridad alta, para revisarlo primero. Eso es lo que la app le dice a la persona.',
-      'REDNA revisa cada caso, decide a qué organización le toca el seguimiento y, si corresponde, le entrega en mano el informe PDF con sus casos.',
+      'El equipo revisa cada caso, decide a qué organización le toca el seguimiento y, si corresponde, le entrega en mano el informe PDF con sus casos.',
     ],
   },
   {
@@ -252,7 +252,7 @@ const CAPITULOS = [
       'La exportación CSV de Casos lleva folio, territorio, tipo, fecha, prioridad, estado y si está marcado como anómalo. No lleva el relato ni las coordenadas.',
       'El informe PDF de seguimiento, en Análisis, es para entregar en mano a una organización. Lo genera solo el administrador, con hasta 500 casos.',
       'El informe no lleva relato, lugar, entidad mencionada, coordenadas, fotos ni el nombre de quien escribió cada nota. Tampoco lleva metadatos: ni programa, ni fecha, ni autor.',
-      '"Lo actuado" son las notas internas de REDNA. La vista previa las muestra todas y tiene un interruptor para sacarlas: revíselas antes de entregar el documento.',
+      '"Lo actuado" son las notas internas del equipo. La vista previa las muestra todas y tiene un interruptor para sacarlas: revíselas antes de entregar el documento.',
     ],
   },
   {
@@ -260,7 +260,7 @@ const CAPITULOS = [
     titulo: 'Respaldos',
     intro: 'La información no puede depender de una sola copia en un solo servidor.',
     reglas: [
-      'Un respaldo es una copia cifrada de toda la base de datos. Sin la clave que guarda REDNA, el archivo no sirve para nada.',
+      'Un respaldo es una copia cifrada de toda la base de datos. Sin la clave que guarda el equipo, el archivo no sirve para nada.',
       'Es "automático" de esta forma: cada vez que alguien abre la pantalla de Respaldos, si el último tiene 7 días o más, se genera uno nuevo. Se guardan los últimos 10.',
       'Solo el rol administrador genera y descarga respaldos, y cada descarga queda anotada.',
     ],

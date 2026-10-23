@@ -73,7 +73,7 @@ function pintarVistaPrevia({ parametros, filtrosTexto, opciones }) {
     </div>
     <label class="interruptor-fila">
       <input type="checkbox" id="inf-actuado" checked>
-      <span><b>Incluir "lo actuado"</b> — las anotaciones de seguimiento de REDNA (${conNotas} de ${casos.length} casos tienen alguna).
+      <span><b>Incluir "lo actuado"</b> — las anotaciones de seguimiento del equipo (${conNotas} de ${casos.length} casos tienen alguna).
       Se escribieron para uso interno: revíselas abajo antes de entregar el documento.</span>
     </label>
     <div class="inf-lista" id="inf-lista">

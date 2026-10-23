@@ -11,7 +11,7 @@
    (Chart.js, leaflet.css, leaflet.js, markercluster.js), medido con
    performance.getEntriesByType('resource') el 2026-10-20: entre 350 y
    480ms CADA UNO, siempre, para abrir hasta Casos o Configuración, que
-   no usan ninguna de las dos. Encontrado después de que Marco reportó
+   no usan ninguna de las dos. Encontrado después de que se reportó
    el panel "cargado" y con saltos visibles en conexiones lentas.
 
    Mismo criterio que ya aplica `main.js` para las vistas mismas

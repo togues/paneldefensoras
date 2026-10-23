@@ -1,8 +1,7 @@
 /* =====================================================================
    Vista Galería — la evidencia fotográfica de todos los casos, para
    recorrerla como galería: de la foto al caso (al revés que en Casos).
-   Pedido del cliente (ACUA) en reunión, transmitido por Marco el
-   2026-10-20. Solo administrador: el servidor ya lo exige
+   Pedido en reunión el 2026-10-20. Solo administrador: el servidor ya lo exige
    (api/admin/galeria.php); acá además la vista avisa en vez de quedar
    vacía, igual que Configuración.
 

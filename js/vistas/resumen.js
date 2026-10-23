@@ -1,5 +1,5 @@
 /* =====================================================================
-   Vista Resumen — OPERATIVA desde el 2026-10-20 (decisión de Marco):
+   Vista Resumen — OPERATIVA desde el 2026-10-20 (decisión de ese día):
    responde "¿qué necesita atención hoy?", sin filtros. Lo analítico
    (series largas, distribuciones, territorio, tipos de hecho) vive en
    Análisis, con filtros en cascada — antes las dos vistas repetían la

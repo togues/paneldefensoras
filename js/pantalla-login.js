@@ -13,7 +13,7 @@ export function montar(raiz, alEntrar) {
     <div class="login-pantalla">
       <form class="login-caja" id="login-form" novalidate>
         <h1>Observatorio Comunitario</h1>
-        <p>Panel de administración — entre con su cuenta de REDNA. ${botonAyuda('login', '¿Cómo entro?')}</p>
+        <p>Panel de administración — entre con su cuenta. ${botonAyuda('login', '¿Cómo entro?')}</p>
         <div id="login-error" style="display:none" class="login-error"></div>
         <div class="login-campo">
           <label for="login-correo">Correo</label>

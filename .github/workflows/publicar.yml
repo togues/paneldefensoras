@@ -16,3 +16,11 @@ jobs:
           protocol: ftps
           local-dir: ./
           server-dir: ./
+          # Las pruebas no se publican: traen datos de desarrollo y no
+          # le sirven a nadie en el servidor. Si una copia vieja quedara
+          # en el hosting, se borra a mano en cPanel.
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            pruebas/**

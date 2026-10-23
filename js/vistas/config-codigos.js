@@ -3,7 +3,7 @@
    docs/decision-08-codigo-de-registro.md).
 
    Un código es una o dos palabras cortas ("CEIBA", máximo 20
-   caracteres) que REDNA reparte en una capacitación o una gira para
+   caracteres) que el equipo reparte en una capacitación o una gira para
    controlar quién se registra en la app. Vale entre dos fechas y no
    tiene nada que ver con ubicación, cartografía ni comunidad. Un código ya creado no se puede volver a crear nunca,
    aunque haya vencido: por eso lo vencido y lo revocado quedan en un

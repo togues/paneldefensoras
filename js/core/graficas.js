@@ -11,6 +11,10 @@
    teclado y con lector de pantalla, y cada una puede ser un filtro.
    ===================================================================== */
 
+// Nombre completo, para lo que sale impreso (informe de casos, PDF de
+// seguimiento). En pantalla basta con "Observatorio Comunitario".
+export const NOMBRE_OBSERVATORIO = 'Observatorio Comunitario de Vulneraciones de Derechos a Personas Defensoras';
+
 export const NOMBRE_FAMILIA = { persona: 'Contra personas', territorio: 'Agua, tierra y medios de vida', gestion: 'Gestiones', logro: 'Logros' };
 export const COLOR_FAMILIA = { persona: '#A32B1E', territorio: '#B0620A', gestion: '#5B4B8A', logro: '#2D6A4F' };
 export const ETIQ_ESTADO = { recibido: 'Sin revisar', en_investigacion: 'En investigación', cerrado: 'Cerrado', descartado: 'Descartado' };

@@ -44,7 +44,7 @@ function esqueleto() {
             <div class="r1"><b>Respaldo automático semanal</b><div class="sw" id="r-sw-automatico"><i></i></div></div>
             <p id="r-automatico-texto"></p>
           </div>
-          <div class="lista-item"><div class="li-t"><b>Cifrado</b><small>AES-256-GCM · clave en poder de REDNA</small></div><span class="li-a">Activo</span></div>
+          <div class="lista-item"><div class="li-t"><b>Cifrado</b><small>AES-256-GCM · clave en poder del equipo</small></div><span class="li-a">Activo</span></div>
           <div class="lista-item">
             <div class="li-t"><b>Retención</b><small>Cuántos respaldos se conservan a la vez</small></div>
             <input type="number" min="1" max="50" id="r-retencion-input" class="campo-filtro" style="width:70px;text-align:center">
@@ -86,7 +86,7 @@ function pintarConfig(config) {
   sw.classList.toggle('off', !config.automatico_activo);
   document.getElementById('r-automatico-texto').textContent = config.automatico_activo
     ? 'Activado — se genera uno nuevo la próxima vez que alguien entre a esta pantalla y ya haya pasado una semana desde el último.'
-    : 'Desactivado. Se recomienda activarlo antes de que la plataforma quede en manos de REDNA.';
+    : 'Desactivado. Se recomienda activarlo antes de que la plataforma quede en manos del equipo.';
   document.getElementById('r-retencion-input').value = config.retencion;
   document.getElementById('r-retencion-sub').textContent = `Se conservan los últimos ${config.retencion}.`;
 }

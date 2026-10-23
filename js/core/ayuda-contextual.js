@@ -96,7 +96,7 @@ const CONTENIDOS = {
   respaldos: {
     overline: 'Ayuda · Respaldos',
     titulo: '¿Qué es exactamente un respaldo?',
-    texto: 'Una copia cifrada de toda la base de datos del observatorio, para que la información nunca dependa de una sola copia en un solo servidor. Se descifra solo con la clave que guarda REDNA — sin ella, el archivo no sirve de nada, ni para quien lo robe ni para quien lo pierda.',
+    texto: 'Una copia cifrada de toda la base de datos del observatorio, para que la información nunca dependa de una sola copia en un solo servidor. Se descifra solo con la clave que guarda el equipo — sin ella, el archivo no sirve de nada, ni para quien lo robe ni para quien lo pierda.',
     lista: ['"Automático" revisa cada vez que alguien abre esta pantalla si ya pasó una semana desde el último — no es un reloj corriendo en segundo plano.', 'Cada descarga queda anotada en la bitácora: un respaldo descargado sale de la plataforma y queda en un equipo que ya nadie controla ahí.', 'Solo administrador — descargar la base completa, aunque esté cifrada, no es una acción de todos los días.']
   }
 };

@@ -1,6 +1,6 @@
 /* =====================================================================
    Visita guiada del panel: recorre cada sección, ilumina la parte que
-   importa y explica en una frase para qué sirve. Pedido de Marco, 21 de
+   importa y explica en una frase para qué sirve. Pedido del 21 de
    octubre de 2026.
 
    La primera vez que una persona entra se le ofrece con un aviso en la

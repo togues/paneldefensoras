@@ -1,7 +1,7 @@
 /* =====================================================================
    Vista Mapa: los casos en el territorio, con filtros, línea de tiempo,
    tres fondos, regla para medir y coordenadas del cursor. Rediseño
-   pedido por Marco el 22 de octubre de 2026: con 500 casos, 500 puntos
+   pedido el 22 de octubre de 2026: con 500 casos, 500 puntos
    sin fecha ni tipo no dicen nada.
 
    Lo que devuelve GET /admin/mapa depende del rol (regla 5, decisión 06,

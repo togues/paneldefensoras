@@ -1,7 +1,7 @@
 /* =====================================================================
    Sesión de panel — guarda el token de PanelAuth.php y los datos del
    usuario en localStorage (a diferencia de app/, acá SÍ tiene sentido:
-   esto es una herramienta interna de REDNA/ACUA, no el dispositivo
+   esto es una herramienta interna del equipo, no el dispositivo
    anónimo de quien reporta, y conviene que el personal no tenga que
    volver a entrar cada vez que cierra el navegador — la sesión igual
    "caduca por inactividad" del lado del servidor, api_v1.md sección 2).
