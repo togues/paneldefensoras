@@ -17,6 +17,7 @@
 import { obtenerSalud, marcarAnomaliaRevisada } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
+import { esc } from '../core/graficas.js';
 import { esqueletoCalidad, cargarCalidad } from './salud-calidad.js';
 
 const ETIQ_TIPO_ANOMALIA = {
@@ -58,6 +59,11 @@ function esqueleto() {
         <p class="sub">Lo que el sistema marcó al llegar cada reporte (caracteres raros, filtro de contenido). Una persona las revisa y las da por vistas.</p>
         <div id="s-anomalias"></div>
       </div>
+    </div>
+    <div class="caja" id="s-seguridad-caja" hidden style="margin-top:14px">
+      <h2>Seguridad del servidor</h2>
+      <p class="sub">Solo la ve el administrador. Revisa la versión de PHP y la configuración del .env; nunca muestra el valor de un secreto.</p>
+      <div id="s-seguridad"></div>
     </div>`;
 }
 
@@ -89,7 +95,18 @@ function pintarPlataforma(d) {
     }
   ];
   document.getElementById('s-plataforma').innerHTML = filas.map((f) => `
-    <div class="sfila"><i class="sem ${f.sem}"></i><span class="t">${f.t}<small>${f.small}</small></span><span class="v">${f.v}</span></div>`).join('');
+    <div class="sfila"><i class="sem ${f.sem}"></i><span class="t">${f.t}<small>${f.small}</small></span><span class="v">${esc(f.v)}</span></div>`).join('');
+}
+
+const SEMAFORO = { bien: 's-ok', aviso: 's-am', mal: 's-ro' };
+
+// Viene de lib/SeguridadServidor.php, y solo para el rol administrador
+// (el servidor manda null a los demás).
+function pintarSeguridad(chequeos) {
+  if (!chequeos) return;
+  document.getElementById('s-seguridad-caja').hidden = false;
+  document.getElementById('s-seguridad').innerHTML = chequeos.map((c) => `
+    <div class="sfila"><i class="sem ${SEMAFORO[c.nivel] || 's-am'}"></i><span class="t">${esc(c.titulo)}<small>${esc(c.texto)}</small></span></div>`).join('');
 }
 
 function pintarAnomalias(lista) {
@@ -104,7 +121,7 @@ function pintarAnomalias(lista) {
   cont.innerHTML = lista.map((a) => `
     <div class="sfila">
       <i class="sem s-am"></i>
-      <span class="t">${ETIQ_TIPO_ANOMALIA[a.tipo_anomalia] || a.tipo_anomalia}<small>${a.folio || '—'} · ${formatoFecha(a.detectado_en)}</small></span>
+      <span class="t">${esc(ETIQ_TIPO_ANOMALIA[a.tipo_anomalia] || a.tipo_anomalia)}<small>${esc(a.folio || '—')} · ${formatoFecha(a.detectado_en)}</small></span>
       <span class="v">${esAdministrador ? `<span class="btn chico ghost" data-revisar="${a.id}">Marcar revisada</span>` : 'Ver en Casos'}</span>
     </div>`).join('');
 
@@ -129,7 +146,7 @@ export async function montar(raiz) {
   document.getElementById('s-cargando')?.remove();
 
   if (!r.ok) {
-    raiz.insertAdjacentHTML('beforeend', `<p class="error-carga">No se pudo cargar Salud: ${r.error} (${r.code}).</p>`);
+    raiz.insertAdjacentHTML('beforeend', `<p class="error-carga">No se pudo cargar Salud: ${esc(r.error)} (${esc(r.code)}).</p>`);
     return;
   }
 
@@ -137,5 +154,6 @@ export async function montar(raiz) {
   pintarKpis(r.data);
   pintarPlataforma(r.data);
   pintarAnomalias(r.data.anomalias_sin_revisar_detalle);
+  pintarSeguridad(r.data.seguridad);
   await cargarCalidad();
 }
