@@ -718,3 +718,10 @@ button.barra.activa .bl span:first-child{font-weight:700}
   .m-color span{display:none}
   .m-filtros-pie{justify-content:space-between}
 }
+/* Borrar un caso: aparte, al final y con el borde rojo, nunca pegado a
+   "Guardar cambios". */
+.zona-peligro{margin-top:14px;border-color:var(--error)}
+.zona-peligro h2{color:var(--error)}
+.zona-peligro .campo{margin:8px 0 10px;font-family:ui-monospace,monospace}
+.zona-peligro .btn{width:100%}
+.zona-peligro .btn:disabled{opacity:.45;cursor:not-allowed}

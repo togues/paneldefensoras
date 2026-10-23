@@ -224,6 +224,12 @@ export async function descargarRespaldo(id, nombreArchivo) {
  * obtenerEvidenciaUrl(), acá sí pasa por pedir(): la respuesta es
  * {success, data}, no el archivo en sí.
  */
+// Borra el caso entero, permanente (admin/casos.php). `folio` es la
+// confirmación que pide el servidor: tiene que coincidir exacto.
+export function eliminarCaso(id, folio) {
+  return pedir('/admin/casos/' + encodeURIComponent(id), { method: 'DELETE', body: { confirmar: folio } });
+}
+
 export function eliminarEvidencia(id) {
   return pedir('/admin/evidencias/' + encodeURIComponent(id), { method: 'DELETE' });
 }

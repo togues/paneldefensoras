@@ -27,7 +27,7 @@ const ETAPAS = [
   },
   {
     control: 'Para entrar',
-    reglas: ['El código de registro tiene que estar vigente', '5 registros por hora desde una misma conexión'],
+    reglas: ['El código de registro tiene que estar vigente', 'Hasta 100 registros por hora desde una misma conexión, para que alcance en un taller'],
   },
   {
     color: 'azul', icono: 'telefono', quien: 'La persona, en la app',
@@ -199,6 +199,7 @@ const CAPITULOS = [
       'Algunas notas las pone el sistema solo, por ejemplo al eliminar una foto, al publicar o al asignar el seguimiento. Esas no salen en el informe PDF.',
       'La organización de seguimiento (por ejemplo, la Junta de Agua) es una decisión del equipo sobre el caso. No es la organización de quien reportó. Cualquier rol la asigna caso por caso; asignarla a muchos casos a la vez es solo del administrador.',
       'El sistema marca como "anómalo" un caso con caracteres raros o con contenido bloqueado por el filtro. Esos casos se revisan en Salud de datos.',
+      'Solo el administrador puede borrar un caso, escribiendo su folio para confirmar. Se borra para siempre, con sus fotos, su bitácora y su publicación en el muro; solo los respaldos ya generados lo conservan hasta que vencen.',
     ],
   },
   {

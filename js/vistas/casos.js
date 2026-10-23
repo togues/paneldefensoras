@@ -21,7 +21,7 @@
    firmarlo", respetando los filtros que estén puestos en ese momento,
    no solo la página visible. Ver exportarCsv()/exportarPdf() más abajo.
    ===================================================================== */
-import { obtenerCasos, obtenerCaso, obtenerCatalogos, actualizarCaso, publicarCaso, obtenerEvidenciaUrl, eliminarEvidencia, asignarSeguimientoEnLote } from '../data/api-client.js';
+import { obtenerCasos, obtenerCaso, obtenerCatalogos, actualizarCaso, publicarCaso, obtenerEvidenciaUrl, eliminarEvidencia, eliminarCaso, asignarSeguimientoEnLote } from '../data/api-client.js';
 import * as sesion from '../data/sesion.js';
 import { boton as botonAyuda } from '../core/ayuda-contextual.js';
 import { cargarLeaflet } from '../core/cargador-librerias.js';
@@ -588,6 +588,14 @@ async function abrirDetalle(id) {
         ${publicarBloque}
         <div class="caja"><h2>Bitácora</h2>${bitacora}</div>
         <p class="sub2" style="margin-top:14px">El relato original nunca se edita: conserva su valor probatorio. Lo que se corrige es la versión para el muro, aparte.</p>
+        ${esAdministrador && c.folio ? `<div class="caja zona-peligro">
+          <h2>Borrar este caso</h2>
+          <p class="sub2">Se borra para siempre: el relato, las fotos, la bitácora y, si estaba en el muro, la publicación. No se puede deshacer.</p>
+          <label class="sub2" for="c-borrar-folio">Para confirmar, escriba el folio <b>${esc(c.folio)}</b></label>
+          <input class="campo" id="c-borrar-folio" autocomplete="off" spellcheck="false" placeholder="${esc(c.folio)}">
+          <div id="c-borrar-error" style="display:none" class="error-carga"></div>
+          <button class="btn peligro" type="button" id="c-borrar" disabled>Borrar el caso</button>
+        </div>` : ''}
       </div>
     </div>`;
 
@@ -599,6 +607,7 @@ async function abrirDetalle(id) {
   detalle.dataset.casoId = id;
 
   document.getElementById('c-cerrar').addEventListener('click', cerrarDetalle);
+  enlazarBorrarCaso(id, c.folio);
   cargarMiniaturasEvidencia(idsEvidencias);
   // Leaflet ya no viene cargado de entrada (core/cargador-librerias.js)
   // — la mayoría de los casos no tiene punto exacto, así que no vale
@@ -730,6 +739,30 @@ function refrescarDetalleSiSigueAbierto(id) {
   const abierta = document.getElementById('overlay').classList.contains('on');
   if (abierta && document.getElementById('detalle').dataset.casoId === String(id)) return abrirDetalle(id);
   return null;
+}
+
+// Solo administrador (el servidor lo vuelve a exigir). El botón se
+// activa cuando el folio escrito coincide: escribirlo es la confirmación,
+// sin un "¿Seguro?" que se acepta sin leer.
+function enlazarBorrarCaso(id, folio) {
+  const campo = document.getElementById('c-borrar-folio');
+  if (!campo) return;
+  const boton = document.getElementById('c-borrar');
+  const error = document.getElementById('c-borrar-error');
+  campo.addEventListener('input', () => { boton.disabled = campo.value.trim() !== folio; });
+  boton.addEventListener('click', async () => {
+    boton.disabled = true;
+    error.style.display = 'none';
+    const r = await eliminarCaso(id, campo.value.trim());
+    if (!r.ok) {
+      error.textContent = 'No se pudo borrar: ' + r.error;
+      error.style.display = '';
+      boton.disabled = false;
+      return;
+    }
+    cerrarDetalle();
+    alCambiarDetalle();
+  });
 }
 
 function cerrarDetalle() {
